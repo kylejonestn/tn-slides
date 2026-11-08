@@ -288,7 +288,7 @@ function parseWysiwygDom(containerEl, autoLayouts = true, splitStrategy = 'smart
 
   slideChunks.forEach((chunk, slideIdx) => {
     let title = '';
-    let kicker = 'STATE OF TENNESSEE';
+    let kicker = '';
     let citation = '';
     let bullets = [];
     let notes = [];
@@ -469,7 +469,7 @@ function parseWysiwygDom(containerEl, autoLayouts = true, splitStrategy = 'smart
     slides.push({
       id: `slide-${Date.now()}-${slideIdx}`,
       layout: layout,
-      kicker: kicker,
+      kicker: kicker || 'STATE OF TENNESSEE',
       title: title || `Slide ${slideIdx + 1}`,
       citation: citation || '',
       body: bodyContent,
