@@ -460,6 +460,20 @@ function setupEventListeners() {
       }
     }
 
+    const iconChip = e.target.closest('.smart-icon-chip-btn');
+    if (iconChip && iconChip.dataset.icon) {
+      const icon = iconChip.dataset.icon;
+      const selectBgIcon = document.getElementById('select-bg-icon');
+      if (selectBgIcon) {
+        selectBgIcon.value = icon;
+      }
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.bgIcon = icon;
+      }
+      updateSlideFromForm(false);
+    }
+
     if (e.target.closest('#btn-add-visual-contextual')) {
       const mediaTab = document.querySelector('.sidebar-tab-btn[data-tab="media"]');
       if (mediaTab) mediaTab.click();
@@ -494,6 +508,57 @@ function setupEventListeners() {
         slide.animationType = selectSlideAnimType.value;
         updateDrawerBadges(slide);
       }
+    });
+  }
+
+  // Decorative Watermark Icon Drawer Controls
+  const selectBgIcon = document.getElementById('select-bg-icon');
+  if (selectBgIcon) {
+    selectBgIcon.addEventListener('change', () => {
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.bgIcon = selectBgIcon.value.trim();
+      }
+      updateSlideFromForm(false);
+    });
+  }
+
+  const sliderBgIconOpacity = document.getElementById('slider-bg-icon-opacity');
+  const labelBgIconOpacity = document.getElementById('label-bg-icon-opacity');
+  if (sliderBgIconOpacity) {
+    sliderBgIconOpacity.addEventListener('input', () => {
+      const slide = appData.slides[currentSlideIndex];
+      const val = parseFloat(sliderBgIconOpacity.value) || 0.04;
+      if (slide) {
+        slide.bgIconOpacity = val;
+      }
+      if (labelBgIconOpacity) {
+        labelBgIconOpacity.textContent = `${Math.round(val * 100)}%`;
+      }
+      updateSlideFromForm(false);
+    });
+  }
+
+  const selectBgIconPos = document.getElementById('select-bg-icon-pos');
+  if (selectBgIconPos) {
+    selectBgIconPos.addEventListener('change', () => {
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.bgIconPosition = selectBgIconPos.value;
+      }
+      updateSlideFromForm(false);
+    });
+  }
+
+  const btnClearBgIcon = document.getElementById('btn-clear-bg-icon');
+  if (btnClearBgIcon) {
+    btnClearBgIcon.addEventListener('click', () => {
+      if (selectBgIcon) selectBgIcon.value = '';
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.bgIcon = '';
+      }
+      updateSlideFromForm(false);
     });
   }
 

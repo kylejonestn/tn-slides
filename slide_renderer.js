@@ -288,6 +288,107 @@ function updateSmartLayoutSuggestions(text, currentLayout) {
   }).join('');
 }
 
+function getSuggestedIconsForSlide(slide) {
+  if (!slide) return [];
+  const text = `${slide.title || ''} ${slide.kicker || ''} ${slide.subtitle || ''} ${slide.body || ''} ${slide.citation || ''}`.toLowerCase();
+
+  const suggestions = [];
+
+  // 1. Legal / Statutory / Compliance
+  if (/\b(legal|law|statute|t\.c\.a|code|court|judge|judicial|compliance|audit|regulation|penalty|liability|rights|mandate)\b/i.test(text) || slide.citation) {
+    suggestions.push({ icon: 'fa-scale-balanced', label: 'Legal Justice' });
+    suggestions.push({ icon: 'fa-file-shield', label: 'Statutory Shield' });
+    suggestions.push({ icon: 'fa-gavel', label: 'Judicial Gavel' });
+  }
+
+  // 2. Finance / Fiscal / Budget
+  if (/\b(budget|fiscal|dollar|\$|revenue|fund|cost|expense|appropriation|finance|tax|economic|economy|growth|grant|audit)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-chart-line', label: 'Growth Chart' });
+    suggestions.push({ icon: 'fa-sack-dollar', label: 'Fiscal Budget' });
+    suggestions.push({ icon: 'fa-vault', label: 'Treasury' });
+  }
+
+  // 3. Healthcare / Medical
+  if (/\b(health|medical|clinical|hospital|patient|doctor|nurse|clinic|wellness|mental|care|tenncare|medicaid|disease|treatment)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-heart-pulse', label: 'Vital Health' });
+    suggestions.push({ icon: 'fa-hospital', label: 'Healthcare' });
+    suggestions.push({ icon: 'fa-stethoscope', label: 'Diagnostics' });
+  }
+
+  // 4. Education / Workforce
+  if (/\b(education|school|student|teacher|college|university|degree|training|workforce|apprentice|learn|literacy|academic|campus)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-graduation-cap', label: 'Higher Ed' });
+    suggestions.push({ icon: 'fa-school', label: 'Education' });
+    suggestions.push({ icon: 'fa-user-graduate', label: 'Workforce' });
+  }
+
+  // 5. Tech / Data / Cloud / Cyber
+  if (/\b(tech|software|data|system|cloud|server|network|portal|digital|cyber|security|analytics|database|code|online)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-laptop-code', label: 'Technology' });
+    suggestions.push({ icon: 'fa-shield-halved', label: 'Cybersecurity' });
+    suggestions.push({ icon: 'fa-database', label: 'Data Bank' });
+  }
+
+  // 6. Roads / Infrastructure / Transport
+  if (/\b(road|highway|bridge|transport|transit|dot|traffic|freight|logistics|infrastructure|route|fleet|vehicle)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-road', label: 'Highways' });
+    suggestions.push({ icon: 'fa-bridge', label: 'Bridges' });
+    suggestions.push({ icon: 'fa-truck-fast', label: 'Logistics' });
+  }
+
+  // 7. Parks / Environment / Agriculture
+  if (/\b(park|forest|nature|mountain|conservation|environment|wildlife|outdoor|agriculture|farm|crop|rural|smoky)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-mountain-sun', label: 'Smoky Mtns' });
+    suggestions.push({ icon: 'fa-tree', label: 'State Forest' });
+    suggestions.push({ icon: 'fa-wheat-awn', label: 'Agriculture' });
+  }
+
+  // 8. Strategy / Milestones / Goals
+  if (/\b(strategy|mission|vision|goal|milestone|priority|target|roadmap|initiative|launch|future|outcome|benchmark)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-bullseye', label: 'Strategic Goal' });
+    suggestions.push({ icon: 'fa-compass', label: 'Direction' });
+    suggestions.push({ icon: 'fa-rocket', label: 'Launch' });
+  }
+
+  // 9. Civic / Tennessee State / Government
+  if (/\b(tennessee|state|citizen|public|government|capitol|governor|civic|department|agency|assembly|legislation|division|county)\b/i.test(text)) {
+    suggestions.push({ icon: 'fa-landmark', label: 'State Capitol' });
+    suggestions.push({ icon: 'fa-building-columns', label: 'Civic Trust' });
+    suggestions.push({ icon: 'fa-award', label: 'Excellence' });
+  }
+
+  // Default fallbacks if no specific keywords
+  suggestions.push({ icon: 'fa-landmark', label: 'State Capitol' });
+  suggestions.push({ icon: 'fa-chart-line', label: 'Performance' });
+  suggestions.push({ icon: 'fa-bullseye', label: 'Key Target' });
+  suggestions.push({ icon: 'fa-shield-halved', label: 'State Seal' });
+
+  // Deduplicate by icon
+  const seen = new Set();
+  return suggestions.filter(item => {
+    if (seen.has(item.icon)) return false;
+    seen.add(item.icon);
+    return true;
+  }).slice(0, 5);
+}
+
+function updateSmartIconSuggestions(slide) {
+  const container = document.getElementById('smart-bg-icon-chips');
+  if (!container || !slide) return;
+  const suggestions = getSuggestedIconsForSlide(slide);
+  const currentIcon = slide.bgIcon || '';
+
+  container.innerHTML = suggestions.map(s => {
+    const isActive = s.icon === currentIcon;
+    return `
+      <button type="button" class="smart-icon-chip-btn ${isActive ? 'active' : ''}" data-icon="${s.icon}" title="Apply ${s.label} (${s.icon}) as background watermark">
+        <i class="fa-solid ${s.icon}"></i>
+        <span>${s.label}</span>
+      </button>
+    `;
+  }).join('');
+}
+
 function updateDrawerBadges(slide) {
   const citationBadge = document.getElementById('citation-summary-badge');
   if (citationBadge) {
@@ -307,6 +408,20 @@ function updateDrawerBadges(slide) {
     const isAnim = slide.animate !== false;
     const animType = slide.animationType || 'push';
     motionBadge.textContent = isAnim ? `${animType.toUpperCase()} FX` : 'Off';
+  }
+
+  const bgIconBadge = document.getElementById('bg-icon-summary-badge');
+  if (bgIconBadge) {
+    if (slide && slide.bgIcon && slide.bgIcon.trim().length > 0) {
+      const cleanName = slide.bgIcon.replace(/^fa-/, '').replace(/-/g, ' ');
+      bgIconBadge.textContent = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+      bgIconBadge.style.background = 'var(--tn-navy)';
+      bgIconBadge.style.color = '#fff';
+    } else {
+      bgIconBadge.textContent = 'None';
+      bgIconBadge.style.background = 'var(--tn-slate-200)';
+      bgIconBadge.style.color = 'var(--tn-slate-500)';
+    }
   }
 }
 
@@ -348,6 +463,18 @@ function loadSlideIntoForm(idx) {
   if (chkSlideAnimate) chkSlideAnimate.checked = isAnim;
   if (selectSlideAnimType) selectSlideAnimType.value = slide.animationType || 'push';
   if (slideAnimTypeContainer) slideAnimTypeContainer.style.display = isAnim ? 'flex' : 'none';
+
+  // Decorative Watermark Icon Binding
+  const selectBgIcon = document.getElementById('select-bg-icon');
+  const sliderBgIconOpacity = document.getElementById('slider-bg-icon-opacity');
+  const labelBgIconOpacity = document.getElementById('label-bg-icon-opacity');
+  const selectBgIconPos = document.getElementById('select-bg-icon-pos');
+
+  if (selectBgIcon) selectBgIcon.value = slide.bgIcon || '';
+  const currentOpacity = (typeof slide.bgIconOpacity === 'number') ? slide.bgIconOpacity : 0.04;
+  if (sliderBgIconOpacity) sliderBgIconOpacity.value = currentOpacity;
+  if (labelBgIconOpacity) labelBgIconOpacity.textContent = `${Math.round(currentOpacity * 100)}%`;
+  if (selectBgIconPos) selectBgIconPos.value = slide.bgIconPosition || 'bottom-right';
 
   // Slide Chart Config Panel
   const chartBox = document.getElementById('slide-chart-config-box');
@@ -471,6 +598,7 @@ function loadSlideIntoForm(idx) {
 
   checkBrevity(slide.body || '');
   updateSmartLayoutSuggestions(slide.body || '', slide.layout || 'layout-split');
+  updateSmartIconSuggestions(slide);
   updateDrawerBadges(slide);
 }
 
@@ -499,6 +627,19 @@ function updateSlideFromForm(reanimate = false) {
     videoStatusBadge.style.display = (slide.videoUrl && slide.videoUrl.trim().length > 0) ? 'inline-block' : 'none';
   }
   slide.audioUrl = inputAudioUrl.value.trim();
+
+  // Decorative Watermark Icon Sync
+  const selectBgIcon = document.getElementById('select-bg-icon');
+  const sliderBgIconOpacity = document.getElementById('slider-bg-icon-opacity');
+  const labelBgIconOpacity = document.getElementById('label-bg-icon-opacity');
+  const selectBgIconPos = document.getElementById('select-bg-icon-pos');
+
+  if (selectBgIcon) slide.bgIcon = selectBgIcon.value.trim();
+  if (sliderBgIconOpacity) {
+    slide.bgIconOpacity = parseFloat(sliderBgIconOpacity.value) || 0.04;
+    if (labelBgIconOpacity) labelBgIconOpacity.textContent = `${Math.round(slide.bgIconOpacity * 100)}%`;
+  }
+  if (selectBgIconPos) slide.bgIconPosition = selectBgIconPos.value;
 
   if (chkSlideAnimate) {
     slide.animate = chkSlideAnimate.checked;
@@ -600,6 +741,7 @@ function updateSlideFromForm(reanimate = false) {
   renderCurrentSlide(shouldReanimate);
   checkBrevity(slide.body || '');
   updateSmartLayoutSuggestions(slide.body || '', selectLayout.value);
+  updateSmartIconSuggestions(slide);
   updateDrawerBadges(slide);
 
   // Keep active rail slide thumbnail title & kicker synchronized in real time
@@ -1084,6 +1226,30 @@ function renderStructuredContentLines(lines, options = {}) {
   }).join('');
 }
 
+function renderDecorativeWatermark(slide) {
+  if (!slide || !slide.bgIcon || !slide.bgIcon.trim()) return '';
+  const rawIcon = slide.bgIcon.trim();
+  const iconClass = rawIcon.includes('fa-') ? (rawIcon.startsWith('fa-solid') ? rawIcon : 'fa-solid ' + rawIcon) : ('fa-solid fa-' + rawIcon);
+  const opacity = (typeof slide.bgIconOpacity === 'number') ? slide.bgIconOpacity : 0.04;
+  const position = slide.bgIconPosition || 'bottom-right';
+
+  let posStyle = 'bottom: 24px; right: 28px; font-size: 240px; transform: rotate(-6deg);';
+  if (position === 'center') {
+    posStyle = 'top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-6deg); font-size: 280px;';
+  } else if (position === 'top-right') {
+    posStyle = 'top: 36px; right: 28px; font-size: 200px; transform: rotate(6deg);';
+  }
+
+  const isDarkLayout = slide.layout === 'layout-section-break';
+  const color = isDarkLayout ? 'rgba(255, 255, 255, 0.95)' : 'var(--slide-accent, var(--tn-navy))';
+
+  return `
+    <div class="slide-decorative-watermark" aria-hidden="true" style="${posStyle} opacity: ${opacity}; color: ${color};">
+      <i class="${iconClass}"></i>
+    </div>
+  `;
+}
+
 function buildSlideHtml(slide, index) {
   // Graceful fallback if a slide was previously set to layout-bootstrap5
   if (slide.layout === 'layout-bootstrap5') {
@@ -1097,21 +1263,18 @@ function buildSlideHtml(slide, index) {
 
   const citationBadgeHtml = slide.citation ? `
     <div class="tn-citation-badge" title="Statutory Authority: ${escapeHtml(slide.citation)}" aria-label="Statutory Authority: ${escapeHtml(slide.citation)}">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
-        <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
-        <path d="M7 21h10"/>
-        <path d="M12 3v18"/>
-        <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
-      </svg>
+      <i class="fa-solid fa-scale-balanced" style="font-size: 11px;" aria-hidden="true"></i>
       <span>${escapeHtml(slide.citation)}</span>
     </div>
   ` : '';
+
+  const watermarkHtml = renderDecorativeWatermark(slide);
 
   // 1. APPROVED TEMPLATE 2: BLUE BANNER COVER SLIDE
   if (slide.layout === 'layout-cover-blue-banner') {
     return `
       <div class="layout-cover-blue-banner-stage">
+        ${watermarkHtml}
         <div class="cover-top-agency">
           ${agencyLogoSrc ? `<img src="${agencyLogoSrc}" alt="Department Logo">` : `
             <div style="font-size: 1.4rem; font-weight: 800; color: var(--tn-navy); letter-spacing: -0.01em;">
@@ -1142,6 +1305,7 @@ function buildSlideHtml(slide, index) {
   if (slide.layout === 'layout-cover-state-classic') {
     return `
       <div class="layout-cover-state-classic-stage">
+        ${watermarkHtml}
         <div class="slide-corner-logo">
           ${typeof TN_BRAND_ASSETS !== 'undefined' ? `<img src="${TN_BRAND_ASSETS.tnSquareLogo}" alt="TN State Logo">` : ''}
         </div>
@@ -1176,6 +1340,7 @@ function buildSlideHtml(slide, index) {
 
     return `
       <div class="layout-section-break-stage ${isCrimson ? 'theme-crimson' : ''}">
+        ${watermarkHtml}
         <div class="section-break-watermark" aria-hidden="true">${escapeHtml(watermarkNum)}</div>
         <div class="slide-corner-logo">
           ${typeof TN_BRAND_ASSETS !== 'undefined' ? `<img src="${TN_BRAND_ASSETS.tnSquareLogo}" alt="TN State Logo">` : ''}
@@ -1201,6 +1366,7 @@ function buildSlideHtml(slide, index) {
   if (slide.layout === 'layout-split-50') {
     return `
       <div class="layout-split-50-stage">
+        ${watermarkHtml}
         <div class="split-50-content">
           ${slide.kicker ? `<div class="slide-kicker">${escapeHtml(slide.kicker)}</div>` : ''}
           <h2>${escapeHtml(slide.title)}</h2>
@@ -1246,6 +1412,7 @@ function buildSlideHtml(slide, index) {
   if (slide.layout === 'layout-thank-you') {
     return `
       <div class="layout-thank-you-stage">
+        ${watermarkHtml}
         <div class="slide-corner-logo">
           ${typeof TN_BRAND_ASSETS !== 'undefined' ? `<img src="${TN_BRAND_ASSETS.tnSquareLogo}" alt="TN State Logo">` : ''}
         </div>
@@ -1350,6 +1517,7 @@ function buildSlideHtml(slide, index) {
   if (slide.layout === 'layout-title-hero') {
     return `
       <div class="layout-title-hero">
+        ${watermarkHtml}
         <div class="slide-corner-logo">
           ${agencyLogoSrc ? `<img src="${agencyLogoSrc}" alt="Logo">` : ''}
         </div>
@@ -2142,6 +2310,7 @@ function buildSlideHtml(slide, index) {
   }
 
   return `
+    ${watermarkHtml}
     ${bodyHtml}
     <footer class="slide-footer">
       <div class="slide-footer-brand">
