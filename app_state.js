@@ -145,7 +145,11 @@ const TN_PILLAR_PRESETS = {
 
 // Helper to intelligently split natural language bullets into Title and Description
 function splitNaturalLineIntoTitleDesc(line, fallbackTitle) {
-  const cleanLine = (line || '').replace(/^[0-9]+[\.\)]\s*/, '').replace(/^[•\-\*]\s*/, '').trim();
+  const cleanLine = (line || '')
+    .replace(/^#{1,4}\s*/, '')
+    .replace(/^[0-9]+[\.\)]\s*/, '')
+    .replace(/^[•\-\*✦■★]\s*/, '')
+    .trim();
   if (!cleanLine) return { title: fallbackTitle, desc: '' };
 
   // 1. Explicit pipe delimiter
@@ -906,14 +910,6 @@ const ctx = canvasEl.getContext('2d');
 
 // --- 2B. APPROVED STATE LAYOUT CATALOG & MINI PREVIEW WIREFRAMES ---
 const TN_LAYOUT_CATALOG = [
-  {
-    id: 'layout-bootstrap5',
-    name: 'TN.gov Bootstrap 5 Template',
-    category: 'Official State Portals',
-    desc: '1:1 authentic State of Tennessee web portal layout using living tn.gov Bootstrap 5 styles, navigation, and starball footer.',
-    bullets: 'Title, subtitle, side navigation, RTE content & panel',
-    svg: '<rect width="100" height="70" fill="#FFFFFF"/><rect width="100" height="12" fill="#002D62"/><rect width="100" y="12" height="4" fill="#0A3B82"/><rect x="8" y="22" width="26" height="40" rx="1.5" fill="#F8FAFC" stroke="#CBD5E1"/><rect x="8" y="22" width="26" height="4" fill="#BA0C2F"/><rect x="38" y="22" width="54" height="6" rx="1" fill="#002D62"/><rect x="38" y="31" width="54" height="18" rx="1.5" fill="#F8FAFC" stroke="#E2E8F0"/><rect x="38" y="52" width="54" height="10" rx="1.5" fill="#F1F5F9" stroke="#CBD5E1"/><rect width="100" y="66" height="4" fill="#002D62"/>'
-  },
   {
     id: 'layout-cover-blue-banner',
     name: 'Dept Blue Banner Cover',

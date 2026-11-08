@@ -1021,7 +1021,75 @@ function attachOnCanvasInlineEditing(stageEl, slide, slideIndex) {
   }
 }
 
+function renderStructuredContentLines(lines, options = {}) {
+  if (!lines || lines.length === 0) return '';
+  const bulletIcon = options.bulletIcon || '✦';
+
+  return lines.map(line => {
+    const trimmed = (line || '').trim();
+    if (!trimmed) return '';
+
+    // 1. Heading 3: Subhead / Card Title
+    if (trimmed.startsWith('### ')) {
+      const headingText = trimmed.replace(/^###\s+/, '');
+      return `
+        <div class="slide-body-subhead" style="font-size: 1.05rem; font-weight: 700; color: var(--tn-navy); margin: 0.65rem 0 0.25rem; display: flex; align-items: center; gap: 6px;">
+          <span style="display: inline-block; width: 4px; height: 14px; background: var(--tn-state-red); border-radius: 2px;"></span>
+          <span>${escapeHtml(headingText)}</span>
+        </div>
+      `;
+    }
+
+    // 2. Heading 4: Eyebrow / Minor Tag
+    if (trimmed.startsWith('#### ')) {
+      const tagText = trimmed.replace(/^####\s+/, '');
+      return `
+        <div class="slide-body-tag" style="font-size: 0.72rem; font-weight: 800; color: var(--tn-state-red); text-transform: uppercase; letter-spacing: 0.06em; margin: 0.45rem 0 0.15rem;">
+          ${escapeHtml(tagText)}
+        </div>
+      `;
+    }
+
+    // 3. Numbered Item: 1. or 1)
+    const numMatch = trimmed.match(/^(\d{1,2})[\.\)]\s+(.*)$/);
+    if (numMatch) {
+      const num = numMatch[1];
+      const text = numMatch[2];
+      return `
+        <li class="slide-numbered-item" style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.88rem; line-height: 1.45; margin-bottom: 0.35rem;">
+          <span class="slide-num-badge" style="background: var(--tn-navy); color: #fff; font-size: 0.7rem; font-weight: 700; border-radius: 50%; min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; margin-top: 2px; box-shadow: 0 1px 3px rgba(0,45,114,0.25);">${escapeHtml(num)}</span>
+          <span>${escapeHtml(text)}</span>
+        </li>
+      `;
+    }
+
+    // 4. Bullet Item: • or - or *
+    const bulletMatch = trimmed.match(/^[•\-\*✦■★]\s+(.*)$/);
+    if (bulletMatch) {
+      const text = bulletMatch[1];
+      return `
+        <li class="slide-bullet-item" style="display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.88rem; line-height: 1.45; margin-bottom: 0.35rem;">
+          <span style="color: var(--tn-state-red); font-size: 1rem; line-height: 1; flex-shrink: 0; margin-top: 1px;">${bulletIcon}</span>
+          <span>${escapeHtml(text)}</span>
+        </li>
+      `;
+    }
+
+    // 5. Normal paragraph
+    return `
+      <p class="slide-body-paragraph" style="margin: 0.35rem 0 0.45rem; font-size: 0.88rem; line-height: 1.45; color: var(--tn-slate-800);">
+        ${escapeHtml(trimmed)}
+      </p>
+    `;
+  }).join('');
+}
+
 function buildSlideHtml(slide, index) {
+  // Graceful fallback if a slide was previously set to layout-bootstrap5
+  if (slide.layout === 'layout-bootstrap5') {
+    slide.layout = 'layout-split';
+  }
+
   const isWiggle = appData.enableCardWiggle !== false ? 'animate-wiggle' : '';
   const photoStyle = appData.photoStyle || 'photo-style-blue-overlay';
   const lines = (slide.body || '').split('\n').filter(l => l.trim().length > 0);
@@ -1039,152 +1107,6 @@ function buildSlideHtml(slide, index) {
       <span>${escapeHtml(slide.citation)}</span>
     </div>
   ` : '';
-
-  // 0. OFFICIAL STATE OF TENNESSEE BOOTSTRAP 5 LIVING TEMPLATE
-  if (slide.layout === 'layout-bootstrap5') {
-    const leadParagraph = lines[0] || 'Statewide operational and policy modernization framework delivering accessible, accountable citizen services across all 95 Tennessee counties.';
-    const subBullets = lines.slice(1);
-    const panelContent = subBullets.length > 0 ? subBullets[0] : 'Strategic alignment with Triple-A fiscal discipline, state workforce development, and transparent public governance.';
-    const leftNavItems = subBullets.length > 1 ? subBullets.slice(1, 4) : ['Operational Alignment', 'Statutory Modernization', 'County Service Delivery'];
-
-    return `
-      <div class="layout-bootstrap5-stage">
-        <!-- Begin Official TN Core Header (Bootstrap 5) -->
-        <div class="tn-header">
-          <header id="header">
-            <div class="tn-headercoveo">
-              <div class="container-fluid" style="padding: 0 16px;">
-                <div class="row align-items-center top-nav" style="margin: 0; min-height: 28px;">
-                  <div class="col-auto me-auto" style="display: flex; align-items: center; gap: 8px;">
-                    <span class="tn-starball-mini" style="display: inline-block; width: 22px; height: 22px; vertical-align: middle;">
-                      <img src="https://www.tn.gov/etc/clientlibs/tncore/main/img/footer-starball.png" alt="TN Tri-Star" style="width: 100%; height: 100%; object-fit: contain;">
-                    </span>
-                    <span style="color: #FFFFFF; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;">
-                      State of Tennessee
-                    </span>
-                  </div>
-                  <div class="col-auto" style="display: flex; align-items: center; gap: 12px;">
-                    <span class="search-all icon-home-1 text-right" style="font-size: 0.72rem; color: #FFFFFF; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                      <span>TN.gov</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Begin TopNav -->
-            <div class="tn-topnav">
-              <nav id="nav" aria-label="Primary navigation">
-                <div class="container-fluid" style="padding: 0 16px;">
-                  <div class="row align-items-center" style="margin: 0; min-height: 24px;">
-                    <div class="col-12" style="display: flex; align-items: center; justify-content: space-between;">
-                      <ul class="inline-list nav-items" style="display: flex; align-items: center; gap: 14px; margin: 0; padding: 0; list-style: none;">
-                        <li><span class="icon-home" style="color: #BA0C2F; font-size: 0.85rem;" aria-label="Home"></span></li>
-                        <li style="font-weight: 700; font-size: 0.74rem; color: #002D62; border-bottom: 2px solid #BA0C2F; padding-bottom: 2px;">
-                          ${escapeHtml(slide.kicker || 'STATE INITIATIVE')}
-                        </li>
-                        <li style="font-size: 0.74rem; color: #514F50; opacity: 0.85;">Executive Briefing</li>
-                        <li style="font-size: 0.74rem; color: #514F50; opacity: 0.85;">Policy Alignment</li>
-                      </ul>
-                      <div class="right primary-print" style="font-size: 0.74rem; color: #514F50;">
-                        <span class="icon-print" aria-hidden="true" title="Print Template"></span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </nav>
-            </div>
-          </header>
-        </div>
-
-        <!-- Begin Basic Template Content -->
-        <div id="main" class="basic bs5-main-content" role="main">
-          <div class="tn-pagetitle">
-            <h1>${escapeHtml(slide.title)}</h1>
-            ${slide.kicker ? `<p class="subtitle">${escapeHtml(slide.kicker)}</p>` : ''}
-          </div>
-
-          <!-- Begin Left Nav & Main Content Grid (1:1 Bootstrap5.html layout) -->
-          <div class="row leftnav-template bs5-content-row" style="margin: 0; flex: 1;">
-            <!-- Left Nav Component -->
-            <div class="col-4" style="padding-left: 0; padding-right: 10px;">
-              <div class="template-left-nav tn-leftnav">
-                <nav class="side expander" aria-label="Section Menu">
-                  <div class="border-red title">
-                    <span>${escapeHtml(slide.kicker || 'Projects & Priorities')}</span>
-                  </div>
-                  <ul class="block-list">
-                    <li class="active">
-                      <span class="title-link" aria-current="page">${escapeHtml(leadParagraph.split('|')[0].trim().substring(0, 36))}</span>
-                      <ul class="sub-items">
-                        ${leftNavItems.map(item => `
-                          <li><span>${escapeHtml(item.split('|')[0].trim())}</span></li>
-                        `).join('')}
-                      </ul>
-                    </li>
-                  </ul>
-                </nav>
-              </div>
-            </div>
-
-            <!-- Content Component -->
-            <div class="col-8 content" style="padding-right: 0; padding-left: 10px;">
-              <article>
-                <div class="tn-rte">
-                  <p class="bs5-lead-text">
-                    ${escapeHtml(leadParagraph)}
-                  </p>
-                </div>
-
-                <!-- Official Panel Component -->
-                <section class="tn-panel" aria-labelledby="bs5-panel-heading">
-                  <div class="panel">
-                    <div class="tn-rte">
-                      <h3 id="bs5-panel-heading" style="font-size: 0.85rem; font-weight: 700; color: #002D62; margin-top: 0; margin-bottom: 4px;">
-                        ★ Key Statutory &amp; Policy Focus
-                      </h3>
-                      <p style="font-size: 0.78rem; line-height: 1.42; margin: 0; color: #334155;">
-                        ${escapeHtml(panelContent)}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-              </article>
-            </div>
-          </div>
-        </div>
-
-        <!-- Begin Footer -->
-        <div class="tn-footer">
-          <footer id="footer">
-            <div id="footer-top">
-              <div class="row align-items-center" style="margin: 0;">
-                <div class="col-6" style="padding: 0;">
-                  <ul class="inline-list" style="display: flex; gap: 12px; margin: 0; padding: 0; list-style: none; font-size: 0.7rem;">
-                    <li><span class="icon-chat" style="color: #BA0C2F;" aria-hidden="true"></span> Live Chat</li>
-                    <li><span class="icon-help-circled" aria-hidden="true"></span> Help</li>
-                  </ul>
-                </div>
-                <div class="col-6 text-right" style="padding: 0; text-align: right; font-size: 0.7rem;">
-                  <span>${escapeHtml(slide.authorDate || 'State of Tennessee')}</span>
-                </div>
-              </div>
-              <a href="https://www.tn.gov/" class="starball" title="State of Tennessee home">
-                <img src="https://www.tn.gov/etc/clientlibs/tncore/main/img/footer-starball.png" alt="State of Tennessee home" width="100%">
-              </a>
-            </div>
-            <div id="footer-bottom">
-              <div class="row" style="margin: 0;">
-                <div class="col-12" style="font-size: 0.65rem; padding: 0;">
-                  <span class="first">TeamTN.gov</span>
-                </div>
-              </div>
-            </div>
-          </footer>
-        </div>
-      </div>
-    `;
-  }
 
   // 1. APPROVED TEMPLATE 2: BLUE BANNER COVER SLIDE
   if (slide.layout === 'layout-cover-blue-banner') {
@@ -1283,14 +1205,9 @@ function buildSlideHtml(slide, index) {
           ${slide.kicker ? `<div class="slide-kicker">${escapeHtml(slide.kicker)}</div>` : ''}
           <h2>${escapeHtml(slide.title)}</h2>
           <div class="accent-rule" style="margin-bottom: 1.25rem;"></div>
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem; padding: 0;">
-            ${lines.map(l => `
-              <li style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; line-height: 1.45;">
-                <span style="color: var(--tn-state-red); font-size: 1rem; line-height: 1;">■</span>
-                <span>${escapeHtml(l)}</span>
-              </li>
-            `).join('')}
-          </ul>
+          <div class="slide-text-structured" style="display: flex; flex-direction: column; gap: 0.35rem;">
+            ${renderStructuredContentLines(lines, { bulletIcon: '■' })}
+          </div>
           <div style="margin-top: 1.5rem; font-size: 0.8rem; color: var(--tn-slate-500); font-weight: 600;">
             ${escapeHtml(slide.authorName || '')} ${slide.authorDate ? `| ${escapeHtml(slide.authorDate)}` : ''}
           </div>
@@ -1660,14 +1577,9 @@ function buildSlideHtml(slide, index) {
       ${headerHtml}
       <div class="slide-content-grid layout-stat-callout">
         <div class="slide-card ${isWiggle}">
-          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.75rem; padding: 0;">
-            ${lines.map(l => `
-              <li style="display: flex; align-items: flex-start; gap: 0.6rem; font-size: 0.9rem; line-height: 1.4;">
-                <span style="color: var(--tn-state-red); font-size: 1.1rem; line-height: 1;">★</span>
-                <span>${escapeHtml(l)}</span>
-              </li>
-            `).join('')}
-          </ul>
+          <div class="slide-text-structured" style="display: flex; flex-direction: column; gap: 0.35rem;">
+            ${renderStructuredContentLines(lines, { bulletIcon: '★' })}
+          </div>
         </div>
         <div class="slide-card ${isWiggle}" style="text-align: center; justify-content: center; align-items: center; background: linear-gradient(135deg, var(--tn-navy-dark) 0%, var(--tn-navy) 100%); color: #fff;">
           <div class="big-stat-number" style="color: var(--tn-gold);">${escapeHtml(slide.statNumber || 'AAA')}</div>
@@ -2210,14 +2122,9 @@ function buildSlideHtml(slide, index) {
     const isLeftMedia = slide.imagePlacement === 'split-left';
     const textCardHtml = `
       <div class="slide-card ${isWiggle}">
-        <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.65rem; padding: 0;">
-          ${lines.map(l => `
-            <li style="display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.875rem; line-height: 1.4;">
-              <span style="color: var(--tn-state-red); font-size: 1rem; line-height: 1;">✦</span>
-              <span>${escapeHtml(l)}</span>
-            </li>
-          `).join('')}
-        </ul>
+        <div class="slide-text-structured" style="display: flex; flex-direction: column; gap: 0.35rem;">
+          ${renderStructuredContentLines(lines, { bulletIcon: '✦' })}
+        </div>
       </div>
     `;
     const mediaContainerHtml = `

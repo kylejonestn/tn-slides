@@ -571,59 +571,9 @@ async function exportToPptx() {
       }
     }
 
-    // Check if Bootstrap 5 Living Template layout
+    // Fallback if layout was bootstrap5
     if (slide.layout === 'layout-bootstrap5') {
-      pptSlide.addShape(pptx.shapes.RECTANGLE, {
-        x: 0, y: 0, w: 10, h: 0.6,
-        fill: { color: TN_NAVY },
-        line: { color: TN_NAVY }
-      });
-      pptSlide.addText('STATE OF TENNESSEE • TN.GOV', {
-        x: 0.6, y: 0.12, w: 6.0, h: 0.35,
-        fontSize: 11, bold: true, color: TN_WHITE
-      });
-
-      pptSlide.addText(slide.title || 'Slide Title', {
-        x: 0.6, y: 0.85, w: 8.8, h: 0.8,
-        fontSize: 22, bold: true, color: TN_NAVY
-      });
-
-      pptSlide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
-        x: 0.6, y: 1.8, w: 2.8, h: 3.0,
-        fill: { color: 'F8FAFC' },
-        line: { color: 'CBD5E1', width: 1 }
-      });
-      pptSlide.addText(slide.kicker || 'Overview', {
-        x: 0.8, y: 1.95, w: 2.4, h: 0.4,
-        fontSize: 12, bold: true, color: TN_CRIMSON
-      });
-
-      const bLines = (slide.body || '').split('\n').filter(b => b.trim().length > 0);
-      pptSlide.addText(bLines[0] || '', {
-        x: 3.7, y: 1.8, w: 5.7, h: 1.2,
-        fontSize: 13, color: '334155'
-      });
-
-      pptSlide.addShape(pptx.shapes.ROUNDED_RECTANGLE, {
-        x: 3.7, y: 3.2, w: 5.7, h: 1.6,
-        fill: { color: 'F8FAFC' },
-        line: { color: TN_CRIMSON, width: 2 }
-      });
-      pptSlide.addText(bLines[1] || 'Key Statutory & Policy Focus', {
-        x: 3.9, y: 3.4, w: 5.3, h: 1.2,
-        fontSize: 11, color: '1E293B'
-      });
-
-      pptSlide.addShape(pptx.shapes.RECTANGLE, {
-        x: 0, y: 5.15, w: 10, h: 0.45,
-        fill: { color: TN_NAVY },
-        line: { color: TN_NAVY }
-      });
-      pptSlide.addText('TeamTN.gov • State of Tennessee', {
-        x: 0.6, y: 5.22, w: 8.8, h: 0.3,
-        fontSize: 9, color: 'CCCCCC'
-      });
-      return;
+      slide.layout = 'layout-split';
     }
 
     // Check if Blue Banner Cover layout

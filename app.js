@@ -523,7 +523,30 @@ function setupEventListeners() {
     });
   }
 
+  // Quick Heading Buttons (H1, H2, H3, H4)
+  const headingBtns = document.querySelectorAll('.wysiwyg-heading-btn');
+  headingBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const headingTag = btn.dataset.heading;
+      execWysiwygCommand('formatBlock', '<' + headingTag.toUpperCase() + '>');
+      const fmtSelect = document.getElementById('wysiwyg-format-select');
+      if (fmtSelect) fmtSelect.value = headingTag;
+    });
+  });
+
   const wysiwygEditor = document.getElementById('outline-wysiwyg-editor');
+  let outlineDebounceTimer = null;
+  function triggerLiveOutlineSync() {
+    const syncIndicator = document.getElementById('importer-sync-indicator');
+    if (syncIndicator) {
+      syncIndicator.textContent = '⏳ Parsing...';
+      syncIndicator.style.color = '#f59e0b';
+    }
+    clearTimeout(outlineDebounceTimer);
+    outlineDebounceTimer = setTimeout(updateOutlinePreview, 120);
+  }
+
   if (wysiwygEditor) {
     wysiwygEditor.addEventListener('paste', (e) => {
       const pastedText = (e.clipboardData || window.clipboardData)?.getData('text/plain');
@@ -532,12 +555,32 @@ function setupEventListeners() {
         if (textInput) textInput.value = pastedText;
       }
     });
-    ['input', 'keyup', 'paste'].forEach(evtType => {
-      wysiwygEditor.addEventListener(evtType, () => {
-        setTimeout(updateOutlinePreview, 10);
-      });
+    ['input', 'keyup', 'paste', 'change'].forEach(evtType => {
+      wysiwygEditor.addEventListener(evtType, triggerLiveOutlineSync);
     });
   }
+
+  // Explicit Update Slides Button
+  const btnReparseOutline = document.getElementById('btn-reparse-outline');
+  if (btnReparseOutline) {
+    btnReparseOutline.addEventListener('click', () => {
+      updateOutlinePreview();
+      const count = document.getElementById('detected-slide-count')?.textContent || '0';
+      const toast = document.createElement('div');
+      toast.className = 'save-toast';
+      toast.textContent = `✓ Refreshed outline: detected ${count} slide(s)`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2500);
+    });
+  }
+
+  // Periodic Auto-Sync Timer (every 20s when outline editor is open)
+  setInterval(() => {
+    const modal = document.getElementById('modal-outline-importer');
+    if (modal && modal.classList.contains('active')) {
+      updateOutlinePreview();
+    }
+  }, 20000);
 
   document.getElementById('btn-insert-sample-agenda').addEventListener('click', () => {
     if (outlineEditorMode === 'wysiwyg') {

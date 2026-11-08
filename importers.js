@@ -241,14 +241,14 @@ function setOutlineEditorMode(mode) {
 }
 
 function parseWysiwygDom(containerEl, autoLayouts = true, splitStrategy = 'smart') {
+  if (!containerEl) return [];
   const textContent = containerEl.innerText || containerEl.textContent || '';
   if (!textContent.trim()) return [];
 
   const headings = containerEl.querySelectorAll('h1, h2');
-  const hasOutlineBullets = /^[•\-\*\+]\s+/m.test(textContent) || /^\s*\d{1,2}[\.\)]\s+/m.test(textContent);
-
-  // When user pastes outline text (or no explicit H1/H2 headings), leverage the smart outline parser!
-  if (headings.length === 0 || hasOutlineBullets) {
+  
+  // Only fall back to plain-text parser if user entered unstyled text without any H1/H2 slide headers
+  if (headings.length === 0) {
     return parseOutlineText(textContent, autoLayouts, splitStrategy);
   }
 
@@ -263,7 +263,6 @@ function parseWysiwygDom(containerEl, autoLayouts = true, splitStrategy = 'smart
     const txt = el.textContent.trim();
     if (/^(?:---|\*\*\*)$/.test(txt)) return true;
     if (/^slide\s*\d+[:\-.]?/i.test(txt)) return true;
-    if (/^\d{1,2}[\.\)]\s+[A-Z0-9]/.test(txt) && (idx === 0 || !currentElements.length)) return true;
     return false;
   };
 
@@ -305,28 +304,56 @@ function parseWysiwygDom(containerEl, autoLayouts = true, splitStrategy = 'smart
       const txt = el.textContent.trim();
       if (!txt && tag !== 'HR') return;
 
-      if (!title && (tag === 'H1' || tag === 'H2' || tag === 'H3')) {
-        title = txt.replace(/^#{1,3}\s+/, '').replace(/^\d{1,2}[\.\)]\s+/, '').replace(/^slide\s*\d+[:\-.]?\s*/i, '').trim();
+      // H1 or H2: Primary Slide Title
+      if (!title && (tag === 'H1' || tag === 'H2')) {
+        title = txt.replace(/^#{1,2}\s+/, '').replace(/^\d{1,2}[\.\)]\s+/, '').replace(/^slide\s*\d+[:\-.]?\s*/i, '').trim();
         return;
       }
 
+      // H4 before or right after title: Kicker / Category Eyebrow
+      if (tag === 'H4' && !kicker && bullets.length === 0) {
+        kicker = txt.replace(/^#{1,4}\s+/, '').trim().toUpperCase();
+        return;
+      }
+
+      // H3: Card Subheading or Pillar Title
+      if (tag === 'H3') {
+        const subTxt = txt.replace(/^#{1,3}\s+/, '').trim();
+        if (!title) {
+          title = subTxt;
+        } else {
+          bullets.push(`### ${subTxt}`);
+        }
+        return;
+      }
+
+      // H4 inside body: Minor Section Tag
+      if (tag === 'H4') {
+        const tagTxt = txt.replace(/^#{1,4}\s+/, '').trim();
+        bullets.push(`#### ${tagTxt}`);
+        return;
+      }
+
+      // Blockquote: Leadership Quote
       if (tag === 'BLOCKQUOTE') {
         quoteText = txt.replace(/^[“"']+|[”"']+$/g, '').trim();
         return;
       }
 
+      // Unordered or Ordered Lists
       if (tag === 'UL' || tag === 'OL') {
         const isOl = tag === 'OL';
         const lis = el.querySelectorAll('li');
         lis.forEach((li, liIdx) => {
           const liTxt = li.textContent.trim();
           if (liTxt) {
-            bullets.push(isOl ? `${liIdx + 1}. ${liTxt}` : liTxt);
+            bullets.push(isOl ? `${liIdx + 1}. ${liTxt}` : `• ${liTxt}`);
           }
         });
         return;
       }
 
+      // Statutory citation check
       if (/^(?:statutory|legal\s*citation|citation|t\.c\.a\.|tca):\s*/i.test(txt)) {
         citation = txt.replace(/^(?:statutory|legal\s*citation|citation|t\.c\.a\.|tca):\s*/i, '').trim();
         return;
@@ -337,16 +364,19 @@ function parseWysiwygDom(containerEl, autoLayouts = true, splitStrategy = 'smart
         return;
       }
 
+      // Speaker notes
       if (/^(?:notes?|speaker notes?):\s*/i.test(txt)) {
         notes.push(txt.replace(/^(?:notes?|speaker notes?):\s*/i, '').trim());
         return;
       }
 
+      // Category / Kicker
       if (/^(?:category|kicker|project\s*id):\s*/i.test(txt)) {
         kicker = txt.replace(/^(?:category|kicker|project\s*id):\s*/i, '').trim().toUpperCase();
         return;
       }
 
+      // Author / Presenter
       if (/^(?:author|presenter|by):\s*/i.test(txt)) {
         authorName = txt.replace(/^(?:author|presenter|by):\s*/i, '').trim();
         return;
@@ -752,9 +782,6 @@ function getParsedSlides(autoLayouts) {
   const editor = document.getElementById('outline-wysiwyg-editor');
 
   if (outlineEditorMode === 'wysiwyg') {
-    if (textInput && textInput.value.trim() && (/^[•\-\*\+]\s+/m.test(textInput.value) || /^\s*\d{1,2}[\.\)]\s+/m.test(textInput.value))) {
-      return parseOutlineText(textInput.value, autoLayouts, strategy);
-    }
     return parseWysiwygDom(editor, autoLayouts, strategy);
   } else {
     const text = textInput ? textInput.value : '';
@@ -768,8 +795,13 @@ function updateOutlinePreview() {
 
   const countBadge = document.getElementById('detected-slide-count');
   const listEl = document.getElementById('detected-slides-list');
+  const syncIndicator = document.getElementById('importer-sync-indicator');
 
   countBadge.textContent = parsed.length;
+  if (syncIndicator) {
+    syncIndicator.textContent = `● Live Synced (${parsed.length} slides)`;
+    syncIndicator.style.color = '#059669';
+  }
 
   if (parsed.length === 0) {
     listEl.innerHTML = `
