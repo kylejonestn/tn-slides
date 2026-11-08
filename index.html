@@ -5395,6 +5395,166 @@ to any subsystem in this codebase.
     @keyframes slideInToast {
       from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
+    /* ==========================================================================
+       PROGRESSIVE DISCLOSURE & LAYERED STUDIO UI
+       ========================================================================== */
+    .drafting-quick-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, rgba(0, 45, 114, 0.05) 0%, rgba(186, 12, 47, 0.05) 100%);
+      border: 1px solid var(--tn-slate-200);
+      border-left: 3px solid var(--tn-navy);
+      border-radius: 6px;
+      padding: 0.45rem 0.65rem;
+      margin-bottom: 0.65rem;
+    }
+    .drafting-quick-text {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--tn-navy);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .drafting-quick-sparkle {
+      font-size: 0.85rem;
+    }
+    .btn-open-importer-pill {
+      font-size: 0.7rem !important;
+      padding: 2px 8px !important;
+      font-weight: 600 !important;
+      background: #ffffff !important;
+      border-color: var(--tn-slate-300) !important;
+    }
+    .btn-open-importer-pill:hover {
+      background: var(--tn-navy) !important;
+      color: #ffffff !important;
+      border-color: var(--tn-navy) !important;
+    }
+
+    /* Smart Layout Suggestion Chips */
+    .smart-suggestions-container {
+      margin-top: 0.45rem;
+      padding: 0.45rem 0.6rem;
+      background: #F8FAFC;
+      border: 1px solid var(--tn-slate-200);
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .smart-suggestions-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--tn-slate-600);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .smart-suggestions-chips {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .smart-chip-btn {
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 14px;
+      border: 1px solid var(--tn-slate-300);
+      background: #ffffff;
+      color: var(--tn-navy);
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .smart-chip-btn:hover {
+      background: var(--tn-navy);
+      color: #ffffff;
+      border-color: var(--tn-navy);
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0, 45, 114, 0.15);
+    }
+    .smart-chip-btn.active {
+      background: var(--tn-navy);
+      color: #ffffff;
+      border-color: var(--tn-navy);
+    }
+
+    /* Layered Drawers (<details>) */
+    .layered-drawer {
+      margin-top: 0.65rem;
+      border: 1px solid var(--tn-slate-200);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #ffffff;
+      transition: border-color 0.15s ease;
+    }
+    .layered-drawer:hover {
+      border-color: var(--tn-slate-300);
+    }
+    .layered-drawer summary {
+      padding: 0.55rem 0.75rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--tn-slate-700);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      background: var(--tn-slate-50);
+      list-style: none;
+      transition: background 0.15s ease;
+    }
+    .layered-drawer summary::-webkit-details-marker {
+      display: none;
+    }
+    .layered-drawer summary:hover {
+      background: var(--tn-slate-100);
+      color: var(--tn-navy);
+    }
+    .layered-drawer summary::after {
+      content: '▾';
+      font-size: 0.85rem;
+      color: var(--tn-slate-400);
+      transition: transform 0.2s ease;
+    }
+    .layered-drawer[open] summary::after {
+      transform: rotate(180deg);
+      color: var(--tn-navy);
+    }
+    .layered-drawer[open] summary {
+      border-bottom: 1px solid var(--tn-slate-200);
+      background: #ffffff;
+    }
+    .drawer-content {
+      padding: 0.75rem;
+      background: #ffffff;
+    }
+    .drawer-summary-badge {
+      font-size: 0.65rem;
+      font-weight: normal;
+      color: var(--tn-slate-500);
+      padding: 1px 6px;
+      background: var(--tn-slate-200);
+      border-radius: 10px;
+    }
+
+    .contextual-media-btn {
+      font-size: 0.72rem !important;
+      padding: 3px 8px !important;
+      font-weight: 600 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+      color: var(--tn-slate-700) !important;
+    }
+    .contextual-media-btn:hover {
+      color: var(--tn-navy) !important;
+      border-color: var(--tn-navy) !important;
     }
   </style>
 </head>
@@ -5760,52 +5920,53 @@ to any subsystem in this codebase.
               <span>✨ Step 1 Guide: Draft Thoughts into Slides</span>
             </button>
 
-            <!-- Step 1 Driving Card: Start New Deck from Outline (Progressive Disclosure) -->
-            <div class="step1-onboarding-card" id="step1-onboarding-card">
-              <button type="button" class="step1-dismiss-btn" id="btn-dismiss-step1" title="Dismiss Step 1 Guide" aria-label="Dismiss Step 1 Guide">✕</button>
-              <div class="step1-onboarding-header">
-                <span class="step1-tag">STEP 1 • START HERE</span>
-                <span class="step1-badge">Recommended</span>
+            <!-- Sleek Quick Start Bar (Progressive Disclosure) -->
+            <div class="drafting-quick-bar" id="drafting-quick-bar">
+              <div class="drafting-quick-text">
+                <span class="drafting-quick-sparkle">✨</span>
+                <span>Drafting Thoughts into Slides</span>
               </div>
-              <div class="step1-title">Draft Thoughts into Slides</div>
-              <div class="step1-desc">
-                Start creating by drafting your agenda, talking points, or project outline in our full-screen document editor.
-              </div>
-              <button type="button" class="btn btn-primary btn-sm btn-start-step1" id="btn-open-importer-hero" title="Open Full-Screen WYSIWYG Outline Editor">
-                <span>✨ Draft Outline (Full Screen)</span>
-                <span>➜</span>
+              <button type="button" class="btn btn-sm btn-outline-dark btn-open-importer-pill" id="btn-open-importer-hero" title="Open Full-Screen WYSIWYG Outline Document Mode">
+                <span>Document Mode ➜</span>
               </button>
             </div>
 
-            <!-- Compact Quick Launch Actions (Progressive Disclosure) -->
-            <div class="outline-quick-actions">
+            <!-- Compact Quick Launch Actions -->
+            <div class="outline-quick-actions" style="margin-bottom: 0.8rem;">
               <button type="button" class="btn btn-sm btn-outline-dark" id="btn-open-importer" title="Import Outline or Agenda to auto-generate styled slides">
                 <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
-                <span>Outline</span>
+                <span>Outline Doc</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline-dark" id="btn-open-chart-importer" title="Ingest CSV or Excel spreadsheet chart">
                 <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
-                <span>Chart</span>
+                <span>Chart Ingest</span>
               </button>
               <button type="button" class="btn btn-sm btn-outline-dark" id="btn-open-deck-importer" title="Ingest existing PowerPoint (.pptx) or slide deck and convert to State layouts">
                 <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9H9V9h10v2zm-4 4H9v-2h6v2zm4-8H9V5h10v2z"/></svg>
-                <span>Deck</span>
+                <span>Deck Ingest</span>
               </button>
             </div>
 
-            <div class="form-group">
-              <label for="slide-kicker-input">Category / Kicker / Project ID</label>
-              <small style="display: block; font-size: 0.68rem; color: #64748b; margin-bottom: 4px;">Eyebrow tag displayed above the slide title (e.g. division name, topic, or section code)</small>
-              <input type="text" id="slide-kicker-input" class="form-input" placeholder="e.g. STRATEGIC PRIORITIES • STATE OF TENNESSEE">
+            <!-- Slide Title (Primary Focus) -->
+            <div class="form-group" style="margin-bottom: 0.6rem;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
+                <label for="slide-title-input" style="font-weight: 700; font-size: 0.825rem; color: var(--tn-navy); margin: 0;">Slide Title</label>
+                <span style="font-size: 0.68rem; color: var(--tn-slate-500);">Primary Heading</span>
+              </div>
+              <input type="text" id="slide-title-input" class="form-input" placeholder="e.g. Expanding Healthcare Access Across Rural Communities">
             </div>
 
-            <div class="form-group" style="margin-top: 0.8rem;">
-              <label for="slide-title-input">Slide Title (Primary Heading)</label>
-              <input type="text" id="slide-title-input" class="form-input" placeholder="Enter headline text">
+            <!-- Category / Eyebrow (Compact) -->
+            <div class="form-group" style="margin-bottom: 0.8rem;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px;">
+                <label for="slide-kicker-input" style="font-size: 0.72rem; color: var(--tn-slate-600); margin: 0; font-weight: 600;">Category / Eyebrow (Optional)</label>
+                <span style="font-size: 0.65rem; color: var(--tn-slate-400);">Section or Project ID</span>
+              </div>
+              <input type="text" id="slide-kicker-input" class="form-input" style="font-size: 0.78rem; padding: 0.35rem 0.55rem;" placeholder="e.g. 2026 INITIATIVE BRIEFING • STATE OF TENNESSEE">
             </div>
 
             <!-- State Copilot Brevity Assistant Widget -->
-            <div class="copilot-assistant-box" id="copilot-brevity-box" style="margin-top: 0.8rem;">
+            <div class="copilot-assistant-box" id="copilot-brevity-box" style="margin-bottom: 0.8rem;">
               <div class="copilot-assistant-header">
                 <span class="copilot-tag">
                   <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L9.09 8.26 2 9.27l5.45 4.73L5.82 21 12 17.27 18.18 21l-1.63-7 5.45-4.73-7.09-1.01L12 2z"/></svg>
@@ -5819,68 +5980,93 @@ to any subsystem in this codebase.
               <button type="button" class="copilot-action-btn" id="copilot-apply-btn">Apply Copilot Brevity Fix</button>
             </div>
 
-            <div class="form-group" style="margin-top: 0.8rem;">
-              <label for="slide-body-input">
-                <span>Bullets / Body Content</span>
-                <span style="font-weight: 400; text-transform: none; color: var(--tn-slate-600);">(1 bullet per line)</span>
-              </label>
-              <textarea id="slide-body-input" class="form-textarea" rows="4" placeholder="Enter bullet points or descriptive summary..."></textarea>
+            <!-- Thoughts & Content Drafting Area -->
+            <div class="form-group" style="margin-bottom: 0.8rem;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
+                <label for="slide-body-input" style="font-weight: 700; font-size: 0.825rem; color: var(--tn-navy); margin: 0;">
+                  <span>Thoughts &amp; Bullet Points</span>
+                </label>
+                <span style="font-size: 0.68rem; color: var(--tn-slate-500);">(1 bullet per line)</span>
+              </div>
+              <textarea id="slide-body-input" class="form-textarea" rows="5" placeholder="- What is the main update or key message?&#10;- Add details, statistics, or milestones...&#10;- Write naturally; the app auto-structures your cards."></textarea>
               
-              <!-- Strategic Pillars Preset Helper Bar (visible when layout-pillars-3 or layout-pillars-4 is selected) -->
+              <!-- Smart Layout Suggestion Chips Bar -->
+              <div class="smart-suggestions-container" id="smart-layout-suggestions" aria-live="polite">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span class="smart-suggestions-label">💡 Suggested Layouts:</span>
+                  <span id="smart-suggestions-count-badge" style="font-size: 0.65rem; color: var(--tn-slate-500);">Auto-detecting...</span>
+                </div>
+                <div class="smart-suggestions-chips" id="smart-suggestions-chips">
+                  <!-- Dynamically populated by JS based on user text content -->
+                  <button type="button" class="smart-chip-btn active" data-layout="layout-split">📋 Bullet List</button>
+                  <button type="button" class="smart-chip-btn" data-layout="layout-pillars-3">🏛️ 3 Pillars</button>
+                  <button type="button" class="smart-chip-btn" data-layout="layout-bento-3">🍱 3-Card Bento</button>
+                </div>
+              </div>
+
+              <!-- Contextual Visual / Media Trigger -->
+              <div style="margin-top: 0.55rem; display: flex; gap: 8px;">
+                <button type="button" class="btn btn-sm btn-outline-dark contextual-media-btn" id="btn-add-visual-contextual" title="Switch to Media tab to attach photo or graphic">
+                  <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                  <span>+ Add Photo / Graphic</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-dark contextual-media-btn" id="btn-open-chart-contextual" title="Open chart ingestion wizard">
+                  <svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+                  <span>+ Ingest Data Chart</span>
+                </button>
+              </div>
+
+              <!-- Layout Preset Helper Bars (Kept for advanced manual overrides) -->
               <div id="slide-pillars-helper-bar" class="slide-layout-helper-bar" style="display: none;">
                 <div class="helper-text">
-                  <span>💡 <strong>Format:</strong> <code>Title | Description</code></span>
+                  <span>💡 <strong>Tip:</strong> Cards are automatically split; or use <code>Title | Description</code></span>
                   <span id="pillars-count-badge" class="tn-badge-tag" style="font-size: 0.65rem; background: var(--tn-navy); color: #fff;">3 Pillars</span>
                 </div>
                 <button type="button" id="btn-load-pillars-preset" class="helper-btn">📋 Load Sample</button>
               </div>
 
-              <!-- Process Workflow Preset Helper Bar (visible when layout-process-flow is selected) -->
               <div id="slide-process-helper-bar" class="slide-layout-helper-bar" style="display: none;">
                 <div class="helper-text">
-                  <span>💡 <strong>Format:</strong> <code>1. Step | Description</code></span>
+                  <span>💡 <strong>Tip:</strong> Steps are automatically numbered</span>
                   <span class="tn-badge-tag" style="font-size: 0.65rem; background: var(--tn-state-red); color: #fff;">SOP Flow</span>
                 </div>
                 <button type="button" id="btn-load-process-preset" class="helper-btn">📋 Load Sample</button>
               </div>
 
-              <!-- Milestone Timeline Preset Helper Bar (visible when layout-timeline is selected) -->
               <div id="slide-timeline-helper-bar" class="slide-layout-helper-bar" style="display: none;">
                 <div class="helper-text">
-                  <span>💡 <strong>Format:</strong> <code>[Q1] Milestone | Description</code></span>
+                  <span>💡 <strong>Tip:</strong> Timeline nodes are automatically generated</span>
                   <span class="tn-badge-tag" style="font-size: 0.65rem; background: var(--tn-navy); color: #fff;">Timeline</span>
                 </div>
                 <button type="button" id="btn-load-timeline-preset" class="helper-btn">📋 Load Sample</button>
               </div>
 
-              <!-- Policy Comparison Preset Helper Bar (visible when layout-comparison is selected) -->
               <div id="slide-comparison-helper-bar" class="slide-layout-helper-bar" style="display: none;">
                 <div class="helper-text">
-                  <span>💡 <strong>Format:</strong> Separate using <code>===</code> or <code>VS</code></span>
+                  <span>💡 <strong>Tip:</strong> Separate columns using <code>===</code> or <code>VS</code></span>
                   <span class="tn-badge-tag" style="font-size: 0.65rem; background: var(--tn-slate-700); color: #fff;">Comparison</span>
                 </div>
                 <button type="button" id="btn-load-comparison-preset" class="helper-btn">📋 Load Sample</button>
               </div>
 
-              <!-- Executive Agenda Preset Helper Bar (visible when layout-agenda is selected) -->
               <div id="slide-agenda-helper-bar" class="slide-layout-helper-bar" style="display: none;">
                 <div class="helper-text">
-                  <span>💡 <strong>Format:</strong> <code>1. Topic | Discussion</code></span>
+                  <span>💡 <strong>Tip:</strong> Agenda items are automatically numbered</span>
                   <span class="tn-badge-tag" style="font-size: 0.65rem; background: var(--tn-navy); color: #fff;">Agenda</span>
                 </div>
                 <button type="button" id="btn-load-agenda-preset" class="helper-btn">📋 Load Sample</button>
               </div>
 
-              <!-- Section Break Preset Helper Bar (visible when layout-section-break is selected) -->
               <div id="slide-section-break-helper-bar" class="slide-layout-helper-bar" style="display: none;">
                 <div class="helper-text">
-                  <span>💡 <strong>Tip:</strong> Kicker is section tag; body is subtitle</span>
+                  <span>💡 <strong>Tip:</strong> Section tag and topic divider</span>
                   <span class="tn-badge-tag" style="font-size: 0.65rem; background: var(--tn-state-red); color: #fff;">Breaker</span>
                 </div>
                 <button type="button" id="btn-load-section-break-preset" class="helper-btn">📋 Load Sample</button>
               </div>
             </div>
 
+            <!-- Layout Pattern Selector -->
             <div class="form-group" style="margin-top: 0.8rem;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
                 <label for="slide-layout-select" style="margin-bottom: 0; font-weight: 700; font-size: 0.8rem; color: var(--tn-slate-800);">Layout Pattern (Approved Templates)</label>
@@ -5939,29 +6125,6 @@ to any subsystem in this codebase.
                   </div>
                   <div class="layout-mini-desc" id="layout-mini-desc">3 equal cards with distinct priority headings and descriptions.</div>
                   <div class="layout-mini-bullets" id="layout-mini-bullets">💡 Best with 3 bullets/lines</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Simple Slide Animation Toggle & PPTX Mapping (No Granular Overload) -->
-            <div class="form-group" style="margin-top: 0.8rem;">
-              <label id="lbl-slide-motion">Slide Motion &amp; Animation</label>
-              <div style="background: var(--tn-slate-50); border: 1px solid var(--tn-slate-200); border-radius: 6px; padding: 0.65rem 0.8rem; display: flex; flex-direction: column; gap: 0.45rem;">
-                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-weight: 600; font-size: 0.825rem; color: var(--tn-slate-800);">
-                  <input type="checkbox" id="chk-slide-animate" checked>
-                  <span>Enable slick animation for this slide</span>
-                </label>
-                <div id="slide-anim-type-container" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 2px;">
-                  <span style="font-size: 0.75rem; color: var(--tn-slate-600); font-weight: 600;">Style:</span>
-                  <select id="slide-anim-type-select" class="form-select" style="font-size: 0.8rem; padding: 0.35rem 0.6rem;" aria-label="Slide animation preset">
-                    <option value="push">Push &amp; Reveal (Default - Upward Push)</option>
-                    <option value="fade">Executive Smooth Fade (Cinematic)</option>
-                    <option value="wiggle">Tennessee Card Wiggle (Staggered)</option>
-                    <option value="wipe">Horizontal Wipe Reveal</option>
-                  </select>
-                </div>
-                <div style="font-size: 0.72rem; color: var(--tn-slate-500); line-height: 1.35;">
-                  Mapped automatically to native PowerPoint Push/Fade/Wipe transitions upon PPTX export.
                 </div>
               </div>
             </div>
@@ -6125,30 +6288,66 @@ to any subsystem in this codebase.
               </div>
             </div>
 
-            <div class="form-group" style="margin-top: 0.8rem;">
-              <label for="slide-notes-input">Speaker Notes (Accessible Transcript)</label>
-              <textarea id="slide-notes-input" class="form-textarea" rows="2" placeholder="Speaker cues, talking points, and screen reader transcript..."></textarea>
-            </div>
+            <!-- Layered Drawers: Secondary Controls Layered Deeper -->
+            <details class="layered-drawer" id="drawer-slide-motion">
+              <summary>
+                <span>✨ Slide Motion &amp; Transition FX</span>
+                <span class="drawer-summary-badge" id="motion-summary-badge">Push FX</span>
+              </summary>
+              <div class="drawer-content">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; text-transform: none; font-weight: 600; font-size: 0.825rem; color: var(--tn-slate-800); margin-bottom: 6px;">
+                  <input type="checkbox" id="chk-slide-animate" checked>
+                  <span>Enable animation for this slide</span>
+                </label>
+                <div id="slide-anim-type-container" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 4px;">
+                  <span style="font-size: 0.75rem; color: var(--tn-slate-600); font-weight: 600;">Style:</span>
+                  <select id="slide-anim-type-select" class="form-select" style="font-size: 0.8rem; padding: 0.35rem 0.6rem;" aria-label="Slide animation preset">
+                    <option value="push">Push &amp; Reveal (Default - Upward Push)</option>
+                    <option value="fade">Executive Smooth Fade (Cinematic)</option>
+                    <option value="wiggle">Tennessee Card Wiggle (Staggered)</option>
+                    <option value="wipe">Horizontal Wipe Reveal</option>
+                  </select>
+                </div>
+                <div style="font-size: 0.7rem; color: var(--tn-slate-500); margin-top: 5px; line-height: 1.35;">
+                  Mapped automatically to native PowerPoint Push/Fade/Wipe transitions upon PPTX export.
+                </div>
+              </div>
+            </details>
 
-            <div class="form-group" style="margin-top: 0.8rem;">
-              <label for="slide-citation-input" style="display: flex; justify-content: space-between; align-items: center;">
-                <span>Statutory Authority / Legal Citation (T.C.A.)</span>
-                <span style="font-size: 0.68rem; color: var(--tn-slate-500); font-weight: normal;">Optional Footer Badge</span>
-              </label>
-              <input type="text" id="slide-citation-input" class="form-input" placeholder="e.g. T.C.A. § 50-6-101 et seq. or Tenn. Comp. R. &amp; Regs.">
-            </div>
+            <details class="layered-drawer" id="drawer-citation">
+              <summary>
+                <span>⚖️ Statutory Authority (T.C.A.)</span>
+                <span class="drawer-summary-badge" id="citation-summary-badge">Optional</span>
+              </summary>
+              <div class="drawer-content">
+                <label for="slide-citation-input" style="font-size: 0.72rem; color: var(--tn-slate-700); margin-bottom: 4px; display: block;">
+                  Legal / Code Citation (Optional Footer Badge):
+                </label>
+                <input type="text" id="slide-citation-input" class="form-input" placeholder="e.g. T.C.A. § 50-6-101 et seq. or Tenn. Comp. R. &amp; Regs.">
+              </div>
+            </details>
 
-            <!-- Slide Navigation Bar at bottom of Outline Pane -->
-            <div class="outline-nav-bar" id="outline-nav-bar">
+            <details class="layered-drawer" id="drawer-speaker-notes">
+              <summary>
+                <span>🎙️ Speaker Notes &amp; Transcript</span>
+                <span class="drawer-summary-badge">Screen Reader</span>
+              </summary>
+              <div class="drawer-content">
+                <textarea id="slide-notes-input" class="form-textarea" rows="3" placeholder="Speaker cues, talking points, and screen reader transcript..."></textarea>
+              </div>
+            </details>
+
+            <!-- Minimal Outline Navigation Footer -->
+            <div class="outline-nav-bar" id="outline-nav-bar" style="margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1px solid var(--tn-slate-200);">
               <button type="button" class="btn btn-outline-dark outline-nav-btn" id="btn-outline-prev-slide" title="Go to Previous Slide (Left Arrow)" aria-label="Previous Slide">
                 <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                <span>Previous Slide</span>
+                <span>Prev</span>
               </button>
               <div class="outline-nav-counter" id="outline-nav-counter" aria-live="polite">
                 Slide <strong id="outline-nav-current">1</strong> of <span id="outline-nav-total">7</span>
               </div>
               <button type="button" class="btn btn-primary outline-nav-btn" id="btn-outline-next-slide" title="Go to Next Slide (Right Arrow)" aria-label="Next Slide">
-                <span>Next Slide</span>
+                <span>Next</span>
                 <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
               </button>
             </div>

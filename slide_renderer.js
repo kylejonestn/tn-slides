@@ -218,6 +218,98 @@ function switchSlide(idx) {
   syncWithPresenterConsole();
 }
 
+// --- SMART LAYOUT SUGGESTIONS ENGINE (PROGRESSIVE DISCLOSURE) ---
+function updateSmartLayoutSuggestions(text, currentLayout) {
+  const container = document.getElementById('smart-suggestions-chips');
+  const countBadge = document.getElementById('smart-suggestions-count-badge');
+  if (!container) return;
+
+  const lines = (text || '').split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const lineCount = lines.length;
+  const fullText = (text || '').toLowerCase();
+
+  // Pattern detection
+  const hasNumbers = /\b\d+(\.\d+)?%|\$\d+|\b\d{2,}\b/.test(fullText);
+  const hasDates = /\b(q[1-4]|\d{4}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|phase|stage|step|202\d)\b/i.test(fullText);
+  const hasComparison = /\b(vs|versus|baseline|reform|before|after|current|proposed)\b/i.test(fullText) || fullText.includes('===');
+  const hasMapKeywords = /\b(tennessee|county|counties|grand division|west tn|middle tn|east tn|nashville|memphis|knoxville)\b/i.test(fullText);
+
+  const suggestions = [];
+
+  if (hasMapKeywords) {
+    suggestions.push({ id: 'layout-tn-map', label: '🗺️ TN Map', desc: 'Geographic map with regional divisions' });
+  }
+
+  if (hasComparison) {
+    suggestions.push({ id: 'layout-comparison', label: '⚖️ Policy Comparison', desc: 'Baseline vs Reform comparison' });
+  }
+
+  if (hasDates) {
+    suggestions.push({ id: 'layout-timeline', label: '📅 Milestone Timeline', desc: 'Chronological roadmap' });
+    suggestions.push({ id: 'layout-process-flow', label: '🔄 SOP Process Flow', desc: 'Sequential directional flow' });
+  }
+
+  if (lineCount === 3) {
+    suggestions.push({ id: 'layout-pillars-3', label: '🏛️ 3 Pillars', desc: '3 equal priority cards' });
+    suggestions.push({ id: 'layout-bento-3', label: '🍱 3-Card Bento', desc: 'Hero card + 2 companions' });
+  } else if (lineCount === 4) {
+    suggestions.push({ id: 'layout-pillars-4', label: '🏛️ 4 Pillars', desc: '4 equal priority cards' });
+    suggestions.push({ id: 'layout-chart-kpi', label: '📈 4-Card KPI Grid', desc: 'Metric scorecard cards' });
+  }
+
+  if (hasNumbers) {
+    suggestions.push({ id: 'layout-stat-callout', label: '🎯 Big Metric', desc: 'Oversized focal statistic' });
+    suggestions.push({ id: 'layout-chart-bar', label: '📊 Bar Chart', desc: 'Accessible horizontal bar chart' });
+  }
+
+  // General fallbacks
+  suggestions.push({ id: 'layout-split', label: '📋 Bullet List', desc: 'Standard executive bullet points' });
+  suggestions.push({ id: 'layout-agenda', label: '📑 Meeting Agenda', desc: 'Numbered agenda topics' });
+
+  // Deduplicate by ID
+  const seen = new Set();
+  const uniqueSuggestions = suggestions.filter(s => {
+    if (seen.has(s.id)) return false;
+    seen.add(s.id);
+    return true;
+  }).slice(0, 4);
+
+  if (countBadge) {
+    countBadge.textContent = lineCount > 0 ? `${lineCount} thoughts detected` : 'Ready for thoughts';
+  }
+
+  container.innerHTML = uniqueSuggestions.map(s => {
+    const isActive = s.id === currentLayout;
+    return `
+      <button type="button" class="smart-chip-btn ${isActive ? 'active' : ''}" data-layout="${s.id}" title="${s.desc}">
+        ${s.label}
+      </button>
+    `;
+  }).join('');
+}
+
+function updateDrawerBadges(slide) {
+  const citationBadge = document.getElementById('citation-summary-badge');
+  if (citationBadge) {
+    if (slide && slide.citation && slide.citation.trim().length > 0) {
+      citationBadge.textContent = 'Active (T.C.A.)';
+      citationBadge.style.background = 'var(--tn-navy)';
+      citationBadge.style.color = '#fff';
+    } else {
+      citationBadge.textContent = 'Optional';
+      citationBadge.style.background = 'var(--tn-slate-200)';
+      citationBadge.style.color = 'var(--tn-slate-500)';
+    }
+  }
+
+  const motionBadge = document.getElementById('motion-summary-badge');
+  if (motionBadge && slide) {
+    const isAnim = slide.animate !== false;
+    const animType = slide.animationType || 'push';
+    motionBadge.textContent = isAnim ? `${animType.toUpperCase()} FX` : 'Off';
+  }
+}
+
 // --- 5. FORM BINDING & EDITING ---
 function loadSlideIntoForm(idx) {
   const slide = appData.slides[idx];
@@ -378,6 +470,8 @@ function loadSlideIntoForm(idx) {
   }
 
   checkBrevity(slide.body || '');
+  updateSmartLayoutSuggestions(slide.body || '', slide.layout || 'layout-split');
+  updateDrawerBadges(slide);
 }
 
 function updateSlideFromForm(reanimate = false) {
@@ -505,6 +599,8 @@ function updateSlideFromForm(reanimate = false) {
   markDirty();
   renderCurrentSlide(shouldReanimate);
   checkBrevity(slide.body || '');
+  updateSmartLayoutSuggestions(slide.body || '', selectLayout.value);
+  updateDrawerBadges(slide);
 
   // Keep active rail slide thumbnail title & kicker synchronized in real time
   const activeMini = document.querySelector('.rail-slide-card.active .mini-title');
@@ -1103,7 +1199,13 @@ function buildSlideHtml(slide, index) {
         </div>
         <div class="cover-bottom-banner">
           <h1>${escapeHtml(slide.title)}</h1>
-          <div class="banner-sub">${escapeHtml(lines[0] || 'Strategic Modernization & Leadership Briefing')}</div>
+          ${lines.length > 1 ? `
+            <div class="banner-sub-bullets" style="display: flex; flex-direction: column; gap: 0.35rem; margin: 0.6rem 0 0.9rem; font-size: 0.95rem; color: rgba(255, 255, 255, 0.95); text-align: left; max-width: 85%;">
+              ${lines.map(l => `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--tn-gold); font-size: 0.8rem;">★</span><span>${escapeHtml(l)}</span></div>`).join('')}
+            </div>
+          ` : `
+            <div class="banner-sub">${escapeHtml(lines[0] || 'Strategic Modernization & Leadership Briefing')}</div>
+          `}
           <div class="cover-banner-footer">
             <span>${escapeHtml(slide.authorName || 'Jane Doe, Position')}</span>
             <span>|</span>
@@ -1125,6 +1227,11 @@ function buildSlideHtml(slide, index) {
         <div class="state-classic-title-block">
           <div style="font-size: 0.95rem; font-weight: 700; color: var(--tn-slate-600); text-transform: uppercase; margin-bottom: 4px;">STATE OF TENNESSEE</div>
           <h1>${escapeHtml(slide.title)}</h1>
+          ${lines.length > 0 ? `
+            <div class="state-classic-subtitles" style="margin-top: 1.1rem; display: flex; flex-direction: column; gap: 0.45rem; font-size: 1.05rem; color: var(--tn-slate-700);">
+              ${lines.map(l => `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--tn-state-red); font-size: 0.8rem;">★</span><span>${escapeHtml(l)}</span></div>`).join('')}
+            </div>
+          ` : ''}
         </div>
         <div class="state-classic-logo-center">
           ${typeof TN_BRAND_ASSETS !== 'undefined' ? `<img src="${TN_BRAND_ASSETS.bwcLogo}" alt="Agency Emblem">` : ''}
@@ -1154,7 +1261,11 @@ function buildSlideHtml(slide, index) {
         <div class="section-break-kicker">${escapeHtml(kickerText)}</div>
         <h1>${escapeHtml(slide.title)}</h1>
         <div class="section-break-divider"></div>
-        ${slide.body ? `<div class="section-break-sub">${escapeHtml(slide.body.split('\n')[0])}</div>` : ''}
+        ${lines.length > 1 ? `
+          <div class="section-break-bullets" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; font-size: 1.05rem; color: rgba(255, 255, 255, 0.95); z-index: 2; position: relative;">
+            ${lines.map(l => `<div style="display: flex; align-items: center; gap: 8px;"><span style="color: var(--tn-gold); font-size: 0.8rem;">★</span><span>${escapeHtml(l)}</span></div>`).join('')}
+          </div>
+        ` : (slide.body ? `<div class="section-break-sub">${escapeHtml(slide.body.split('\n')[0])}</div>` : '')}
         <footer class="slide-footer" style="color: rgba(255, 255, 255, 0.7); border-top-color: rgba(255, 255, 255, 0.15);">
           <div>${escapeHtml(slide.authorDate || 'STATE OF TENNESSEE')}</div>
           ${citationBadgeHtml}
@@ -2067,6 +2178,11 @@ function buildSlideHtml(slide, index) {
             ${pairedTableHtml}
             ${filterBannerHtml}
             ${kpiGridHtml}
+            ${lines.length > 0 ? `
+              <div class="tn-map-takeaways" style="margin-top: 0.6rem; padding: 0.5rem 0.85rem; background: var(--tn-slate-50); border-left: 3px solid var(--tn-navy); border-radius: 4px; font-size: 0.85rem; color: var(--tn-slate-700); display: flex; flex-direction: column; gap: 0.25rem; text-align: left;">
+                ${lines.map(l => `<div style="display: flex; align-items: center; gap: 6px;"><span style="color: var(--tn-state-red); font-size: 0.75rem;">★</span><span>${escapeHtml(l)}</span></div>`).join('')}
+              </div>
+            ` : ''}
           </div>
         </div>
       </div>

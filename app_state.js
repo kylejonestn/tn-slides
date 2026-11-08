@@ -143,6 +143,45 @@ const TN_PILLAR_PRESETS = {
   ]
 };
 
+// Helper to intelligently split natural language bullets into Title and Description
+function splitNaturalLineIntoTitleDesc(line, fallbackTitle) {
+  const cleanLine = (line || '').replace(/^[0-9]+[\.\)]\s*/, '').replace(/^[•\-\*]\s*/, '').trim();
+  if (!cleanLine) return { title: fallbackTitle, desc: '' };
+
+  // 1. Explicit pipe delimiter
+  if (cleanLine.includes('|')) {
+    const parts = cleanLine.split('|').map(s => s.trim());
+    return { title: parts[0] || fallbackTitle, desc: parts.slice(1).join(' | ') };
+  }
+  // 2. Colon separator: "Title: Description"
+  if (cleanLine.includes(':')) {
+    const parts = cleanLine.split(':').map(s => s.trim());
+    return { title: parts[0] || fallbackTitle, desc: parts.slice(1).join(': ') };
+  }
+  // 3. Em-dash or en-dash or space-hyphen-space: "Title - Description"
+  if (/\s+[–—\-]\s+/.test(cleanLine)) {
+    const parts = cleanLine.split(/\s+[–—\-]\s+/).map(s => s.trim());
+    return { title: parts[0] || fallbackTitle, desc: parts.slice(1).join(' — ') };
+  }
+  // 4. If short line (<= 40 chars), entire line is title
+  if (cleanLine.length <= 40 && !cleanLine.includes(',')) {
+    return { title: cleanLine, desc: '' };
+  }
+  // 5. Natural sentence splitting: break at first comma or period, or first 4-5 words
+  const sentenceMatch = cleanLine.match(/^([^,\.\;]+)[,\.\;]\s*(.*)$/);
+  if (sentenceMatch && sentenceMatch[1].length <= 45 && sentenceMatch[2].length > 0) {
+    return { title: sentenceMatch[1].trim(), desc: sentenceMatch[2].trim() };
+  }
+  // 6. Split by words: take first 4 words as title (up to 32 chars)
+  const words = cleanLine.split(/\s+/);
+  if (words.length > 5) {
+    const titleWords = words.slice(0, 4).join(' ');
+    const descWords = words.slice(4).join(' ');
+    return { title: titleWords, desc: descWords };
+  }
+  return { title: cleanLine, desc: '' };
+}
+
 function parsePillarsContent(bodyText, count) {
   const defaultList = TN_PILLAR_PRESETS[count] || TN_PILLAR_PRESETS[3];
   if (!bodyText || !bodyText.trim()) {
@@ -155,20 +194,12 @@ function parsePillarsContent(bodyText, count) {
   if (blocks.length >= count) {
     parsed = blocks.slice(0, count).map((b, i) => {
       const bLines = b.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      const firstLine = bLines[0].replace(/^[0-9]+[\.\)]\s*/, '').replace(/^[•\-\*]\s*/, '');
-      let title = firstLine;
-      let desc = bLines.slice(1).join(' ').replace(/^[•\-\*]\s*/, '');
-      if (firstLine.includes('|')) {
-        const parts = firstLine.split('|').map(s => s.trim());
-        title = parts[0];
-        desc = (parts.slice(1).join(' | ') + (desc ? ' ' + desc : '')).trim();
-      } else if (firstLine.includes(':') && !bLines.slice(1).length) {
-        const parts = firstLine.split(':').map(s => s.trim());
-        title = parts[0];
-        desc = parts.slice(1).join(': ');
-      }
+      const firstLine = bLines[0];
+      const rest = bLines.slice(1).join(' ').replace(/^[•\-\*]\s*/, '').trim();
+      const splitResult = splitNaturalLineIntoTitleDesc(firstLine, defaultList[i]?.title || `Pillar ${i + 1}`);
+      const desc = (splitResult.desc + (rest ? (splitResult.desc ? ' ' : '') + rest : '')).trim();
       return {
-        title: title || defaultList[i]?.title || `Pillar ${i + 1}`,
+        title: splitResult.title || defaultList[i]?.title || `Pillar ${i + 1}`,
         desc: desc || defaultList[i]?.desc || '',
         icon: defaultList[i]?.icon || 'landmark'
       };
@@ -176,21 +207,10 @@ function parsePillarsContent(bodyText, count) {
   } else {
     const rawLines = bodyText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     parsed = rawLines.slice(0, count).map((line, i) => {
-      const cleanLine = line.replace(/^[0-9]+[\.\)]\s*/, '').replace(/^[•\-\*]\s*/, '');
-      let title = `Pillar 0${i + 1}`;
-      let desc = cleanLine;
-      if (cleanLine.includes('|')) {
-        const parts = cleanLine.split('|').map(s => s.trim());
-        title = parts[0];
-        desc = parts.slice(1).join(' | ');
-      } else if (cleanLine.includes(':')) {
-        const parts = cleanLine.split(':').map(s => s.trim());
-        title = parts[0];
-        desc = parts.slice(1).join(': ');
-      }
+      const splitResult = splitNaturalLineIntoTitleDesc(line, defaultList[i]?.title || `Pillar ${i + 1}`);
       return {
-        title: title || defaultList[i]?.title || `Pillar ${i + 1}`,
-        desc: desc || defaultList[i]?.desc || '',
+        title: splitResult.title || defaultList[i]?.title || `Pillar ${i + 1}`,
+        desc: splitResult.desc || defaultList[i]?.desc || '',
         icon: defaultList[i]?.icon || 'landmark'
       };
     });
@@ -353,7 +373,9 @@ function parseTimelineContent(bodyText) {
         desc = parts.slice(1).join(': ');
       }
     } else {
-      title = line.replace(/^[•\-\*]\s*/, '');
+      const splitResult = splitNaturalLineIntoTitleDesc(line, `Milestone ${i + 1}`);
+      title = splitResult.title;
+      desc = splitResult.desc;
     }
 
     items.push({

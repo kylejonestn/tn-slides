@@ -448,6 +448,55 @@ function setupEventListeners() {
     splitStrategySelect.addEventListener('change', updateOutlinePreview);
   }
 
+  // Progressive Disclosure: Smart Layout Suggestion Chips & Contextual Actions
+  document.addEventListener('click', (e) => {
+    const chip = e.target.closest('.smart-chip-btn');
+    if (chip && chip.dataset.layout) {
+      const layout = chip.dataset.layout;
+      if (selectLayout) {
+        selectLayout.value = layout;
+        updateSlideFromForm(true);
+        renderCurrentSlide(true);
+      }
+    }
+
+    if (e.target.closest('#btn-add-visual-contextual')) {
+      const mediaTab = document.querySelector('.sidebar-tab-btn[data-tab="media"]');
+      if (mediaTab) mediaTab.click();
+    }
+    if (e.target.closest('#btn-open-chart-contextual')) {
+      if (typeof openChartImporter === 'function') openChartImporter();
+    }
+  });
+
+  if (inputCitation) {
+    inputCitation.addEventListener('input', () => {
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.citation = inputCitation.value.trim();
+        updateDrawerBadges(slide);
+      }
+    });
+  }
+  if (chkSlideAnimate) {
+    chkSlideAnimate.addEventListener('change', () => {
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.animate = chkSlideAnimate.checked;
+        updateDrawerBadges(slide);
+      }
+    });
+  }
+  if (selectSlideAnimType) {
+    selectSlideAnimType.addEventListener('change', () => {
+      const slide = appData.slides[currentSlideIndex];
+      if (slide) {
+        slide.animationType = selectSlideAnimType.value;
+        updateDrawerBadges(slide);
+      }
+    });
+  }
+
   document.getElementById('btn-mode-wysiwyg').addEventListener('click', () => setOutlineEditorMode('wysiwyg'));
   document.getElementById('btn-mode-markdown').addEventListener('click', () => setOutlineEditorMode('markdown'));
 
