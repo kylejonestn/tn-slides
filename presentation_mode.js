@@ -881,6 +881,18 @@ function renderPresenterConsoleDocument(win) {
 '      font-size: 0.8rem;' +
 '      max-width: 260px;' +
 '    }' +
+'    @media (max-width: 768px) {' +
+'      body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }' +
+'      .console-header { flex-wrap: wrap; gap: 6px; padding: 0.5rem 0.65rem; }' +
+'      .timekeeper-station { order: 3; width: 100%; justify-content: space-between; padding: 0.35rem 0.65rem; flex-wrap: wrap; gap: 6px; }' +
+'      .countdown-badge { min-width: auto; font-size: 0.95rem; padding: 2px 8px; }' +
+'      .console-main { grid-template-columns: 1fr; padding: 0.65rem; overflow: visible; }' +
+'      .console-dock { flex-wrap: wrap; gap: 8px; padding: 0.55rem 0.65rem; position: sticky; bottom: 0; z-index: 20; }' +
+'      .dock-group { width: 100%; justify-content: space-between; gap: 6px; }' +
+'      .slide-select-dock { flex: 1; min-width: 110px; max-width: none; }' +
+'      .btn-action { padding: 0.45rem 0.65rem; font-size: 0.78rem; }' +
+'      .console-shortcuts-hint { display: none; }' +
+'    }' +
 '  </style>' +
 '</head>' +
 '<body>' +
@@ -905,9 +917,10 @@ function renderPresenterConsoleDocument(win) {
 '        </div>' +
 '      </div>' +
 '    </div>' +
-'    <div style=\"display:flex; align-items:center; gap:0.5rem;\">' +
-'      <span id=\"console-slide-counter\" style=\"font-size: 0.8rem; font-weight:700; color:#94A3B8;\">Slide 1 of 7</span>' +
-'      <button class=\"btn-action\" id=\"btn-focus-slides\" title=\"Focus Audience Slides\">Focus Slides ⛶</button>' +
+'    <div style=\"display:flex; align-items:center; gap:0.4rem;\">' +
+'      <span id=\"console-slide-counter\" style=\"font-size: 0.78rem; font-weight:700; color:#94A3B8;\">Slide 1 of 7</span>' +
+'      <button class=\"btn-action\" id=\"btn-focus-slides\" title=\"Focus Audience Slides\">Slides ⛶</button>' +
+'      <button class=\"btn-action\" id=\"btn-close-console\" onclick=\"window.close();\" title=\"Close Presenter Cockpit\">✕ Close</button>' +
 '    </div>' +
 '  </header>' +
 '  <main class=\"console-main\">' +
@@ -958,7 +971,7 @@ function renderPresenterConsoleDocument(win) {
 '    </div>' +
 '    <div class=\"dock-group\">' +
 '      <button class=\"btn-action\" id=\"btn-black-screen\" title=\"Toggle Black Screen (B)\">⬛ Black Screen</button>' +
-'      <span style=\"font-size:0.75rem; color:#64748B;\">Shortcuts: [Space/→] Next • [←] Prev • [B] Black • [Esc] Exit</span>' +
+'      <span class=\"console-shortcuts-hint\" style=\"font-size:0.75rem; color:#64748B;\">Shortcuts: [Space/→] Next • [←] Prev • [B] Black • [Esc] Exit</span>' +
 '    </div>' +
 '  </footer>' +
 '  <script>' +
