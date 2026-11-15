@@ -1066,8 +1066,16 @@ to any subsystem in this codebase.
 
     @media (max-width: 768px) {
       html, body {
-        overflow-x: hidden;
-        height: auto;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        height: auto !important;
+        min-height: 100dvh;
+        -webkit-overflow-scrolling: touch;
+      }
+      .studio-shell {
+        height: auto !important;
+        min-height: 100dvh;
+        overflow: visible !important;
       }
       .studio-header {
         padding: 0.45rem 0.65rem !important;
