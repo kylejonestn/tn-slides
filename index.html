@@ -1246,10 +1246,13 @@ to any subsystem in this codebase.
       font-weight: 700;
       padding: 1px 6px;
       border-radius: 10px;
+      z-index: 2;
     }
     .layout-card-schematic {
       width: 100%;
-      height: 100px;
+      height: 92px;
+      min-height: 92px;
+      flex-shrink: 0;
       background: #F8FAFC;
       border-bottom: 1px solid var(--tn-slate-200);
       display: flex;
@@ -3228,16 +3231,154 @@ to any subsystem in this codebase.
     }
     .editor-mode-toggle {
       display: inline-flex;
+      gap: 3px;
       background: var(--tn-slate-100);
-      padding: 2px;
+      padding: 3px;
       border-radius: 6px;
       border: 1px solid var(--tn-slate-200);
       font-size: 0.725rem;
+    }
+    .editor-mode-btn {
+      border: none;
+      background: transparent;
+      color: var(--tn-slate-600);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .editor-mode-btn:hover {
+      color: var(--tn-navy);
+      background: rgba(255, 255, 255, 0.5);
     }
     .editor-mode-btn.active {
       background: #ffffff;
       color: var(--tn-navy);
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Interactive Empty Media Slot on Live Canvas */
+    .canvas-empty-media-slot {
+      width: 100%;
+      height: 100%;
+      min-height: 220px;
+      border: 2px dashed var(--tn-slate-300);
+      border-radius: var(--tn-radius-md);
+      background: rgba(248, 250, 252, 0.85);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 1.25rem;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .canvas-empty-media-slot:hover {
+      border-color: var(--tn-navy);
+      background: rgba(0, 45, 114, 0.03);
+    }
+    .canvas-empty-media-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 45, 114, 0.08);
+      color: var(--tn-navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+    .canvas-empty-media-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .canvas-slot-btn {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid var(--tn-slate-300);
+      background: #ffffff;
+      color: var(--tn-navy);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      transition: all 0.15s ease;
+    }
+    .canvas-slot-btn:hover {
+      background: var(--tn-navy);
+      color: #ffffff;
+      border-color: var(--tn-navy);
+      transform: translateY(-1px);
+    }
+    #fullscreen-slide-stage .canvas-empty-media-slot {
+      border-style: solid;
+      border-color: var(--tn-slate-200);
+    }
+    #fullscreen-slide-stage .canvas-empty-media-actions,
+    #fullscreen-slide-stage .canvas-empty-media-hint {
+      display: none;
+    }
+
+    /* Express-Style Add Slide Block Picker */
+    .block-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 0.85rem;
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+    .block-picker-card {
+      background: #ffffff;
+      border: 1.5px solid var(--tn-slate-200);
+      border-radius: 8px;
+      padding: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      text-align: left;
+      transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .block-picker-card:hover {
+      border-color: var(--tn-navy);
+      background: #F8FAFC;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 45, 114, 0.12);
+    }
+    .block-picker-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: rgba(0, 45, 114, 0.08);
+      color: var(--tn-navy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+    }
+    .block-picker-card:hover .block-picker-icon {
+      background: var(--tn-navy);
+      color: #ffffff;
+    }
+    .block-picker-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--tn-navy);
+    }
+    .block-picker-desc {
+      font-size: 0.72rem;
+      color: var(--tn-slate-600);
+      line-height: 1.35;
     }
 
     /* ==========================================================================
@@ -6020,31 +6161,43 @@ to any subsystem in this codebase.
               <span><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--tn-state-red);"></i> Step 1 Guide: Draft Thoughts into Slides</span>
             </button>
 
-            <!-- Sleek Quick Start Bar (Progressive Disclosure) -->
-            <div class="drafting-quick-bar" id="drafting-quick-bar">
-              <div class="drafting-quick-text">
-                <span class="drafting-quick-sparkle"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-                <span>Drafting Thoughts into Slides</span>
+            <!-- Sleek Quick Start & Import Bar (Progressive Disclosure) -->
+            <div class="drafting-quick-bar" id="drafting-quick-bar" style="margin-bottom: 0.75rem;">
+              <button type="button" class="btn btn-sm btn-outline-dark btn-open-importer-pill" id="btn-open-importer-hero" title="Open Full-Screen WYSIWYG Outline Document Mode" style="display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--tn-state-red);"></i>
+                <span>Draft from Outline</span>
+              </button>
+              <div class="menu-container" style="position: relative;">
+                <button type="button" class="btn btn-sm btn-outline-dark btn-open-importer-pill" id="btn-outline-import-menu" popovertarget="popover-outline-import" title="Import Outline, Spreadsheet Chart, or PowerPoint Deck" style="display: inline-flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-file-import"></i>
+                  <span>Import</span>
+                  <i class="fa-solid fa-caret-down" style="font-size: 0.65rem;"></i>
+                </button>
+                <div id="popover-outline-import" popover="auto" class="dropdown-popover-menu" style="min-width: 220px;">
+                  <div class="dropdown-header">Import &amp; Generate</div>
+                  <button type="button" class="dropdown-item" id="btn-open-importer" title="Import Outline or Agenda to auto-generate styled slides">
+                    <i class="fa-solid fa-file-lines dropdown-icon"></i>
+                    <div class="dropdown-content">
+                      <span class="dropdown-title">Outline / Word Doc</span>
+                      <span class="dropdown-desc">Auto-split thoughts into slides</span>
+                    </div>
+                  </button>
+                  <button type="button" class="dropdown-item" id="btn-open-chart-importer" title="Ingest CSV or Excel spreadsheet chart">
+                    <i class="fa-solid fa-chart-column dropdown-icon"></i>
+                    <div class="dropdown-content">
+                      <span class="dropdown-title">Chart / CSV Data</span>
+                      <span class="dropdown-desc">Bar chart, KPI grid, or WCAG table</span>
+                    </div>
+                  </button>
+                  <button type="button" class="dropdown-item" id="btn-open-deck-importer" title="Ingest existing PowerPoint (.pptx) or slide deck and convert to State layouts">
+                    <i class="fa-solid fa-file-powerpoint dropdown-icon"></i>
+                    <div class="dropdown-content">
+                      <span class="dropdown-title">PowerPoint (.pptx)</span>
+                      <span class="dropdown-desc">Convert existing deck to TN brand</span>
+                    </div>
+                  </button>
+                </div>
               </div>
-              <button type="button" class="btn btn-sm btn-outline-dark btn-open-importer-pill" id="btn-open-importer-hero" title="Open Full-Screen WYSIWYG Outline Document Mode">
-                <span>Document Mode</span> <i class="fa-solid fa-arrow-right"></i>
-              </button>
-            </div>
-
-            <!-- Compact Quick Launch Actions -->
-            <div class="outline-quick-actions" style="margin-bottom: 0.8rem;">
-              <button type="button" class="btn btn-sm btn-outline-dark" id="btn-open-importer" title="Import Outline or Agenda to auto-generate styled slides">
-                <i class="fa-solid fa-file-lines"></i>
-                <span>Outline Doc</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-dark" id="btn-open-chart-importer" title="Ingest CSV or Excel spreadsheet chart">
-                <i class="fa-solid fa-chart-column"></i>
-                <span>Chart Ingest</span>
-              </button>
-              <button type="button" class="btn btn-sm btn-outline-dark" id="btn-open-deck-importer" title="Ingest existing PowerPoint (.pptx) or slide deck and convert to State layouts">
-                <i class="fa-solid fa-file-powerpoint"></i>
-                <span>Deck Ingest</span>
-              </button>
             </div>
 
             <!-- Slide Title (Primary Focus) -->
@@ -7294,12 +7447,12 @@ Notes: Contextual speaker notes for this slide...
               Detected Slides: <span id="detected-slide-count" style="background: var(--tn-navy); color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.75rem;">0</span>
             </span>
             <button type="button" class="btn btn-sm btn-outline-dark" id="btn-reparse-outline" style="font-size: 0.72rem; padding: 2px 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="Re-parse current visual document into separate slides">
-              <span>🔄</span>
+              <i class="fa-solid fa-arrows-rotate"></i>
               <span>Update Slides</span>
             </button>
           </div>
           <div style="font-size: 0.7rem; color: var(--tn-slate-500); display: flex; align-items: center; justify-content: space-between;">
-            <span>⚡ Updates live as you type or format</span>
+            <span><i class="fa-solid fa-bolt" style="color: var(--tn-gold-dark);"></i> Updates live as you type or format</span>
             <span id="importer-sync-indicator" style="color: #059669; font-weight: 600;">● Live Synced</span>
           </div>
           <div id="detected-slides-list" style="flex: 1; overflow-y: auto; max-height: 420px; display: flex; flex-direction: column; gap: 0.6rem; padding-right: 4px;">
@@ -7313,9 +7466,93 @@ Notes: Contextual speaker notes for this slide...
       <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
         <button class="btn btn-outline-dark" id="btn-cancel-importer">Exit to Studio</button>
         <button class="btn btn-primary" id="btn-execute-importer" style="font-weight: 700; display: inline-flex; align-items: center; gap: 8px; padding: 0.55rem 1.4rem;">
-          <span>🚀 Generate Presentation Deck &amp; Enter Studio</span>
-          <span>➔</span>
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <span>Generate Presentation Deck &amp; Enter Studio</span>
+          <i class="fa-solid fa-arrow-right"></i>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL: EXPRESS-STYLE ADD SLIDE BLOCK PICKER
+       ========================================================================== -->
+  <div class="modal-overlay" id="modal-add-block" role="dialog" aria-modal="true" aria-labelledby="add-block-title">
+    <div class="modal-card" style="max-width: 780px; width: 92vw; max-height: 85vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h3 id="add-block-title" style="display: flex; align-items: center; gap: 8px; margin: 0;">
+          <i class="fa-solid fa-cubes"></i>
+          <span>Add a Content Block Slide</span>
+        </h3>
+        <button id="btn-close-add-block" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; padding: 0 4px; line-height: 1;" aria-label="Close block picker">&times;</button>
+      </div>
+      <div style="padding: 0.65rem 1.25rem; background: var(--tn-slate-50); border-bottom: 1px solid var(--tn-slate-200); font-size: 0.78rem; color: var(--tn-slate-600);">
+        Choose what you want to say next—each block inserts a pre-styled, WCAG-compliant Tennessee slide ready for your content.
+      </div>
+      <div class="block-picker-grid" id="add-block-grid">
+        <button type="button" class="block-picker-card" data-block-layout="layout-split">
+          <div class="block-picker-icon"><i class="fa-solid fa-table-columns"></i></div>
+          <div class="block-picker-title">Key Points + Visual</div>
+          <div class="block-picker-desc">Bullet points on the left with a clickable photo or chart slot on the right.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-pillars-3">
+          <div class="block-picker-icon"><i class="fa-solid fa-landmark"></i></div>
+          <div class="block-picker-title">3 Strategic Pillars</div>
+          <div class="block-picker-desc">Three balanced priority cards for goals, themes, or initiatives.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-pillars-4">
+          <div class="block-picker-icon"><i class="fa-solid fa-grip"></i></div>
+          <div class="block-picker-title">4 Strategic Pillars</div>
+          <div class="block-picker-desc">Four equal columns for comprehensive policy or program areas.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-stat-callout">
+          <div class="block-picker-icon"><i class="fa-solid fa-bullseye"></i></div>
+          <div class="block-picker-title">Big Metric Callout</div>
+          <div class="block-picker-desc">Highlight one oversized headline statistic with supporting context.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-timeline">
+          <div class="block-picker-icon"><i class="fa-solid fa-timeline"></i></div>
+          <div class="block-picker-title">Milestone Timeline</div>
+          <div class="block-picker-desc">Chronological roadmap with dates and quarterly checkpoints.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-process-flow">
+          <div class="block-picker-icon"><i class="fa-solid fa-diagram-next"></i></div>
+          <div class="block-picker-title">Step-by-Step Process</div>
+          <div class="block-picker-desc">Sequential workflow chevrons for SOPs and citizen journeys.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-comparison">
+          <div class="block-picker-icon"><i class="fa-solid fa-scale-balanced"></i></div>
+          <div class="block-picker-title">Before / After Compare</div>
+          <div class="block-picker-desc">Side-by-side comparison for policy reform or baseline vs. target.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-quote">
+          <div class="block-picker-icon"><i class="fa-solid fa-quote-left"></i></div>
+          <div class="block-picker-title">Executive Quote</div>
+          <div class="block-picker-desc">Editorial quote spotlight with speaker attribution.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-chart-bar">
+          <div class="block-picker-icon"><i class="fa-solid fa-chart-bar"></i></div>
+          <div class="block-picker-title">Data Chart &amp; Table</div>
+          <div class="block-picker-desc">Accessible horizontal bar chart paired with a WCAG data table.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-tn-map">
+          <div class="block-picker-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+          <div class="block-picker-title">Tennessee Map</div>
+          <div class="block-picker-desc">Interactive Grand Divisions or 95-county regional breakdown.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-section-break">
+          <div class="block-picker-icon"><i class="fa-solid fa-bookmark"></i></div>
+          <div class="block-picker-title">Section Divider</div>
+          <div class="block-picker-desc">Full-bleed dark chapter slide to transition to a new topic.</div>
+        </button>
+        <button type="button" class="block-picker-card" data-block-layout="layout-cover-blue-banner">
+          <div class="block-picker-icon"><i class="fa-solid fa-flag"></i></div>
+          <div class="block-picker-title">Cover / Title Slide</div>
+          <div class="block-picker-desc">Official State of Tennessee department banner cover.</div>
+        </button>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+        <button type="button" class="btn btn-outline-dark" id="btn-cancel-add-block">Cancel</button>
       </div>
     </div>
   </div>

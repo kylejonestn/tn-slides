@@ -221,10 +221,57 @@ function setupEventListeners() {
     });
   }
 
-  // Add Slide Button
+  // Add Slide Button -> Express-style Content Block Picker
   const btnAddSlide = document.getElementById('btn-add-slide');
   if (btnAddSlide) {
-    btnAddSlide.addEventListener('click', addNewSlide);
+    btnAddSlide.addEventListener('click', () => {
+      if (typeof openAddBlockModal === 'function') {
+        openAddBlockModal();
+      } else {
+        addNewSlide();
+      }
+    });
+  }
+
+  const modalAddBlock = document.getElementById('modal-add-block');
+  const btnCloseAddBlock = document.getElementById('btn-close-add-block');
+  const btnCancelAddBlock = document.getElementById('btn-cancel-add-block');
+  if (btnCloseAddBlock) btnCloseAddBlock.addEventListener('click', () => closeAddBlockModal());
+  if (btnCancelAddBlock) btnCancelAddBlock.addEventListener('click', () => closeAddBlockModal());
+  if (modalAddBlock) {
+    modalAddBlock.addEventListener('click', (e) => {
+      if (e.target === modalAddBlock) closeAddBlockModal();
+      const card = e.target.closest('.block-picker-card[data-block-layout]');
+      if (card) {
+        addNewSlide(card.dataset.blockLayout);
+      }
+    });
+  }
+
+  // Interactive Canvas Empty Media Slot Actions
+  document.addEventListener('click', (e) => {
+    const slotBtn = e.target.closest('[data-canvas-action]');
+    if (!slotBtn) return;
+    e.stopPropagation();
+    const action = slotBtn.dataset.canvasAction;
+    if (action === 'add-photo') {
+      const mediaTab = document.querySelector('.sidebar-tab-btn[data-tab="media"]');
+      if (mediaTab) mediaTab.click();
+      const urlInput = document.getElementById('slide-image-url');
+      if (urlInput) setTimeout(() => urlInput.focus(), 120);
+    } else if (action === 'add-chart') {
+      if (typeof openChartImporter === 'function') openChartImporter();
+    }
+  });
+
+  // Auto-close Outline Import popover when an item is clicked
+  const popoverOutlineImport = document.getElementById('popover-outline-import');
+  if (popoverOutlineImport) {
+    popoverOutlineImport.addEventListener('click', (e) => {
+      if (e.target.closest('.dropdown-item') && typeof popoverOutlineImport.hidePopover === 'function') {
+        try { popoverOutlineImport.hidePopover(); } catch (_) {}
+      }
+    });
   }
 
   // Duplicate Slide

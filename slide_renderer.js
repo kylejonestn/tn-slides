@@ -64,13 +64,113 @@ function deleteSlide(idx) {
   }
 }
 
-function addNewSlide() {
+function openAddBlockModal() {
+  const modal = document.getElementById('modal-add-block');
+  if (modal) modal.classList.add('active');
+}
+
+function closeAddBlockModal() {
+  const modal = document.getElementById('modal-add-block');
+  if (modal) modal.classList.remove('active');
+}
+
+function addNewSlide(layoutId = 'layout-split') {
+  const layout = typeof layoutId === 'string' && layoutId ? layoutId : 'layout-split';
+  const starterMap = {
+    'layout-split': {
+      kicker: 'STATE OF TENNESSEE',
+      title: 'Key Takeaways & Overview',
+      body: 'Primary strategic update or citizen outcome\nSupporting operational metric or milestone\nNext steps and accountability owner',
+      bgIcon: 'fa-landmark'
+    },
+    'layout-pillars-3': {
+      kicker: 'STRATEGIC PRIORITIES',
+      title: 'Three Core Strategic Pillars',
+      body: 'Service Modernization | Streamlining digital access for all 95 counties.\nWorkforce Readiness | Aligning regional training with employer demand.\nFiscal Stewardship | Maximizing measurable return on public investment.',
+      bgIcon: 'fa-landmark'
+    },
+    'layout-pillars-4': {
+      kicker: 'PROGRAM FRAMEWORK',
+      title: 'Four Operational Pillars',
+      body: 'Access | Expanding statewide digital intake\nQuality | Enforcing consistent service standards\nSpeed | Reducing cycle times across divisions\nTransparency | Publishing live public dashboards',
+      bgIcon: 'fa-bullseye'
+    },
+    'layout-stat-callout': {
+      kicker: 'PERFORMANCE HIGHLIGHT',
+      title: 'Measurable Statewide Impact',
+      body: '94%\nOn-time resolution rate across all 95 Tennessee counties in FY2026',
+      bgIcon: 'fa-chart-line'
+    },
+    'layout-timeline': {
+      kicker: 'IMPLEMENTATION ROADMAP',
+      title: 'Key Milestones & Rollout Schedule',
+      body: '[Q1 2026] Discovery & Design | Stakeholder workshops and requirements\n[Q2 2026] Regional Pilot | Launch in Middle & West Tennessee\n[Q3 2026] Statewide Rollout | Full deployment across 95 counties',
+      bgIcon: 'fa-compass'
+    },
+    'layout-process-flow': {
+      kicker: 'STANDARD OPERATING PROCEDURE',
+      title: 'Citizen Service Workflow',
+      body: '1. Digital Intake | Online application submitted in under 5 minutes\n2. Automated Review | Instant eligibility and document verification\n3. Determination | Timely resolution and notification',
+      bgIcon: 'fa-rocket'
+    },
+    'layout-comparison': {
+      kicker: 'POLICY MODERNIZATION',
+      title: 'Legacy Process vs. Modernized Approach',
+      body: 'Paper-based manual intake\n14-day average processing window\n===\nUnified online citizen portal\n48-hour automated turnaround',
+      bgIcon: 'fa-scale-balanced'
+    },
+    'layout-quote': {
+      kicker: 'LEADERSHIP PERSPECTIVE',
+      title: 'Commitment to Citizen Service',
+      body: 'Every process we modernize is measured by one standard: how clearly and quickly it serves the people of Tennessee.',
+      citation: 'Tennessee Department Leadership',
+      bgIcon: 'fa-award'
+    },
+    'layout-chart-bar': {
+      kicker: 'DATA & ANALYTICS',
+      title: 'Regional Program Outcomes',
+      body: 'West Tennessee | 1,420\nMiddle Tennessee | 2,180\nEast Tennessee | 1,690',
+      chartData: [
+        { label: 'West Tennessee', value: 1420 },
+        { label: 'Middle Tennessee', value: 2180 },
+        { label: 'East Tennessee', value: 1690 }
+      ],
+      chartCaption: 'FY2026 program completions by Grand Division',
+      bgIcon: 'fa-chart-line'
+    },
+    'layout-tn-map': {
+      kicker: 'STATEWIDE REACH',
+      title: 'Tennessee Grand Divisions Impact',
+      body: 'Regional performance and citizen investment across West, Middle, and East Tennessee.',
+      bgIcon: 'fa-landmark'
+    },
+    'layout-section-break': {
+      kicker: 'SECTION 02',
+      title: 'Operational Roadmap & Next Steps',
+      body: 'Moving from strategy to measurable execution across all divisions',
+      bgIcon: 'fa-compass'
+    },
+    'layout-cover-blue-banner': {
+      kicker: 'STATE OF TENNESSEE',
+      title: 'Executive Briefing Title',
+      body: 'Department Modernization & Strategic Initiatives\nAnnual Leadership Review',
+      bgIcon: 'fa-landmark'
+    }
+  };
+
+  const preset = starterMap[layout] || starterMap['layout-split'];
   const newSlide = {
     id: `slide-${Date.now()}`,
-    layout: 'layout-split',
-    kicker: 'STATE OF TENNESSEE',
-    title: 'New Slide Title',
-    body: 'Key strategic takeaway\nHigh impact executive bullet\nAccessible citizen service metric',
+    layout,
+    kicker: preset.kicker,
+    title: preset.title,
+    body: preset.body,
+    citation: preset.citation || '',
+    chartData: preset.chartData || undefined,
+    chartCaption: preset.chartCaption || undefined,
+    bgIcon: preset.bgIcon || 'fa-landmark',
+    bgIconOpacity: 0.04,
+    bgIconPosition: 'bottom-right',
     mediaUrl: '',
     mediaAlt: '',
     isDecorative: true,
@@ -80,6 +180,7 @@ function addNewSlide() {
   appData.slides.splice(currentSlideIndex + 1, 0, newSlide);
   markDirty();
   switchSlide(currentSlideIndex + 1);
+  closeAddBlockModal();
 }
 
 function renderFilmstrip() {
@@ -2295,9 +2396,25 @@ function buildSlideHtml(slide, index) {
         </div>
       </div>
     `;
+    const emptyMediaSlotHtml = `
+      <div class="canvas-empty-media-slot">
+        <div class="canvas-empty-media-icon"><i class="fa-solid fa-photo-film"></i></div>
+        <div class="canvas-empty-media-hint" style="font-size: 0.78rem; color: var(--tn-slate-600); font-weight: 600;">
+          Add a visual to complete this slide
+        </div>
+        <div class="canvas-empty-media-actions">
+          <button type="button" class="canvas-slot-btn" data-canvas-action="add-photo">
+            <i class="fa-solid fa-image"></i> + Add Photo
+          </button>
+          <button type="button" class="canvas-slot-btn" data-canvas-action="add-chart">
+            <i class="fa-solid fa-chart-column"></i> + Add Chart
+          </button>
+        </div>
+      </div>
+    `;
     const mediaContainerHtml = `
       <div style="height: 100%; min-height: 200px; display: flex; align-items: center; justify-content: center;">
-        ${mediaHtml || `<div class="slide-card" style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; color: var(--tn-slate-600); font-style:italic; font-size:0.85rem;">No media selected</div>`}
+        ${mediaHtml || emptyMediaSlotHtml}
       </div>
     `;
 
