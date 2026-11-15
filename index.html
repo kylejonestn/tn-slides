@@ -3381,6 +3381,112 @@ to any subsystem in this codebase.
       line-height: 1.35;
     }
 
+    /* Floating Canvas Quick-Action Pill */
+    .canvas-quick-action-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0.65rem auto 0;
+      padding: 5px 10px;
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid var(--tn-slate-200);
+      border-radius: 999px;
+      box-shadow: 0 4px 14px rgba(0, 45, 114, 0.08);
+      backdrop-filter: blur(6px);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .canvas-pill-btn {
+      border: none;
+      background: transparent;
+      color: var(--tn-slate-700);
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+    .canvas-pill-btn:hover {
+      background: rgba(0, 45, 114, 0.08);
+      color: var(--tn-navy);
+    }
+    .canvas-pill-btn.primary {
+      background: var(--tn-navy);
+      color: #ffffff;
+    }
+    .canvas-pill-btn.primary:hover {
+      background: var(--tn-state-red);
+      color: #ffffff;
+    }
+    .canvas-pill-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--tn-slate-200);
+    }
+
+    /* Structured Per-Card Block Editor */
+    .structured-block-editor {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .structured-block-card {
+      background: #F8FAFC;
+      border: 1px solid var(--tn-slate-200);
+      border-left: 3px solid var(--tn-navy);
+      border-radius: 6px;
+      padding: 0.5rem 0.6rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .structured-block-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--tn-navy);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .structured-block-input {
+      width: 100%;
+      border: 1px solid var(--tn-slate-300);
+      border-radius: 4px;
+      padding: 0.32rem 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--tn-slate-800);
+      background: #ffffff;
+    }
+    .structured-block-input:focus {
+      outline: none;
+      border-color: var(--tn-navy);
+      box-shadow: 0 0 0 2px rgba(0, 45, 114, 0.12);
+    }
+    .structured-block-textarea {
+      width: 100%;
+      border: 1px solid var(--tn-slate-300);
+      border-radius: 4px;
+      padding: 0.32rem 0.5rem;
+      font-size: 0.75rem;
+      color: var(--tn-slate-700);
+      background: #ffffff;
+      resize: vertical;
+      font-family: inherit;
+      line-height: 1.35;
+    }
+    .structured-block-textarea:focus {
+      outline: none;
+      border-color: var(--tn-navy);
+      box-shadow: 0 0 0 2px rgba(0, 45, 114, 0.12);
+    }
+
     /* ==========================================================================
        FULL-SCREEN STEP 1 OUTLINE & THOUGHT DRAFTING STUDIO
        ========================================================================== */
@@ -6127,6 +6233,31 @@ to any subsystem in this codebase.
           </div>
         </div>
 
+        <!-- Floating Canvas Quick-Action Pill -->
+        <div class="canvas-quick-action-pill" id="canvas-quick-action-pill" role="toolbar" aria-label="Quick Slide Actions">
+          <button type="button" class="canvas-pill-btn" id="btn-pill-swap-layout" title="Swap this slide's layout block">
+            <i class="fa-solid fa-table-cells-large"></i>
+            <span>Swap Block</span>
+          </button>
+          <button type="button" class="canvas-pill-btn" id="btn-pill-flip-sides" title="Flip text and media left/right" style="display: none;">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+            <span>Flip Sides</span>
+          </button>
+          <button type="button" class="canvas-pill-btn" id="btn-pill-watermark" title="Configure decorative background icon">
+            <i class="fa-solid fa-shapes"></i>
+            <span>Watermark</span>
+          </button>
+          <button type="button" class="canvas-pill-btn" id="btn-pill-duplicate" title="Duplicate current slide">
+            <i class="fa-solid fa-copy"></i>
+            <span>Duplicate</span>
+          </button>
+          <span class="canvas-pill-divider"></span>
+          <button type="button" class="canvas-pill-btn primary" id="btn-pill-add-block" title="Insert a new content block slide after this slide">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Slide Block</span>
+          </button>
+        </div>
+
         <!-- Live Screen Reader Announcer Transcript Banner -->
         <div id="screen-reader-transcript-banner" class="screen-reader-banner" style="display: none;">
           <div class="sr-banner-header">
@@ -6237,10 +6368,14 @@ to any subsystem in this codebase.
             <div class="form-group" style="margin-bottom: 0.8rem;">
               <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;">
                 <label for="slide-body-input" style="font-weight: 700; font-size: 0.825rem; color: var(--tn-navy); margin: 0;">
-                  <span>Thoughts &amp; Bullet Points</span>
+                  <span id="slide-body-label-text">Thoughts &amp; Bullet Points</span>
                 </label>
-                <span style="font-size: 0.68rem; color: var(--tn-slate-500);">(1 bullet per line)</span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span id="slide-body-hint-text" style="font-size: 0.68rem; color: var(--tn-slate-500);">(1 bullet per line)</span>
+                  <button type="button" id="btn-toggle-raw-body" style="display: none; background: none; border: 1px solid var(--tn-slate-300); border-radius: 4px; padding: 1px 6px; font-size: 0.65rem; font-weight: 600; color: var(--tn-navy); cursor: pointer;" title="Switch between Card View and Raw Text">Raw Text</button>
+                </div>
               </div>
+              <div id="structured-block-editor" class="structured-block-editor" style="display: none; margin-bottom: 0.5rem;"></div>
               <textarea id="slide-body-input" class="form-textarea" rows="5" placeholder="- What is the main update or key message?&#10;- Add details, statistics, or milestones...&#10;- Write naturally; the app auto-structures your cards."></textarea>
               
               <!-- Smart Layout Suggestion Chips Bar -->

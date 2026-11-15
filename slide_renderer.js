@@ -527,6 +527,141 @@ function updateDrawerBadges(slide) {
 }
 
 // --- 5. FORM BINDING & EDITING ---
+var isRawBodyMode = false;
+
+function isStructuredBlockLayout(layout) {
+  return ['layout-pillars-3', 'layout-pillars-4', 'layout-timeline', 'layout-process-flow', 'layout-comparison'].includes(layout);
+}
+
+function renderStructuredBlockEditor(slide) {
+  const container = document.getElementById('structured-block-editor');
+  const bodyEl = document.getElementById('slide-body-input');
+  const toggleBtn = document.getElementById('btn-toggle-raw-body');
+  const labelEl = document.getElementById('slide-body-label-text');
+  const hintEl = document.getElementById('slide-body-hint-text');
+  if (!container || !bodyEl || !slide) return;
+
+  const isStructured = isStructuredBlockLayout(slide.layout);
+  if (toggleBtn) {
+    toggleBtn.style.display = isStructured ? 'inline-block' : 'none';
+    toggleBtn.textContent = isRawBodyMode ? 'Card View' : 'Raw Text';
+  }
+
+  if (!isStructured || isRawBodyMode) {
+    container.style.display = 'none';
+    bodyEl.style.display = 'block';
+    if (labelEl) labelEl.textContent = 'Thoughts & Bullet Points';
+    if (hintEl) hintEl.textContent = '(1 bullet per line)';
+    return;
+  }
+
+  container.style.display = 'flex';
+  bodyEl.style.display = 'none';
+
+  const syncFromCards = () => {
+    const cards = Array.from(container.querySelectorAll('.structured-block-card'));
+    let newBody = '';
+    if (slide.layout === 'layout-pillars-3' || slide.layout === 'layout-pillars-4') {
+      if (labelEl) labelEl.textContent = slide.layout === 'layout-pillars-4' ? '4 Strategic Pillars' : '3 Strategic Pillars';
+      newBody = cards.map(c => {
+        const t = c.querySelector('.sb-title')?.value?.trim() || '';
+        const d = c.querySelector('.sb-desc')?.value?.trim() || '';
+        return d ? `${t} | ${d}` : t;
+      }).filter(Boolean).join('\n');
+    } else if (slide.layout === 'layout-timeline') {
+      newBody = cards.map(c => {
+        const dt = c.querySelector('.sb-date')?.value?.trim() || 'Phase';
+        const t = c.querySelector('.sb-title')?.value?.trim() || '';
+        const d = c.querySelector('.sb-desc')?.value?.trim() || '';
+        return `[${dt}] ${t}${d ? ' | ' + d : ''}`;
+      }).filter(Boolean).join('\n');
+    } else if (slide.layout === 'layout-process-flow') {
+      newBody = cards.map((c, idx) => {
+        const t = c.querySelector('.sb-title')?.value?.trim() || '';
+        const d = c.querySelector('.sb-desc')?.value?.trim() || '';
+        return `${idx + 1}. ${t}${d ? ' | ' + d : ''}`;
+      }).filter(Boolean).join('\n');
+    } else if (slide.layout === 'layout-comparison') {
+      const leftCard = cards[0];
+      const rightCard = cards[1];
+      const leftLines = (leftCard?.querySelector('.sb-desc')?.value || '').split('\n').map(l => l.trim()).filter(Boolean);
+      const rightLines = (rightCard?.querySelector('.sb-desc')?.value || '').split('\n').map(l => l.trim()).filter(Boolean);
+      newBody = [...leftLines, '===', ...rightLines].join('\n');
+    }
+    bodyEl.value = newBody;
+    updateSlideFromForm(false);
+  };
+
+  let html = '';
+  if (slide.layout === 'layout-pillars-3' || slide.layout === 'layout-pillars-4') {
+    const count = slide.layout === 'layout-pillars-4' ? 4 : 3;
+    if (labelEl) labelEl.textContent = `${count} Strategic Pillars`;
+    if (hintEl) hintEl.textContent = 'Card editor';
+    const items = parsePillarsContent(slide.body, count);
+    html = items.map((p, i) => `
+      <div class="structured-block-card" data-card-idx="${i}">
+        <div class="structured-block-card-header"><span>Pillar 0${i + 1}</span></div>
+        <input type="text" class="structured-block-input sb-title" value="${escapeHtml(p.title)}" placeholder="Pillar Heading">
+        <textarea rows="2" class="structured-block-textarea sb-desc" placeholder="Brief pillar description...">${escapeHtml(p.desc)}</textarea>
+      </div>
+    `).join('');
+  } else if (slide.layout === 'layout-timeline') {
+    if (labelEl) labelEl.textContent = 'Timeline Milestones';
+    if (hintEl) hintEl.textContent = 'Card editor';
+    const items = parseTimelineContent(slide.body);
+    html = items.map((m, i) => `
+      <div class="structured-block-card" data-card-idx="${i}">
+        <div class="structured-block-card-header"><span>Milestone 0${i + 1}</span></div>
+        <div style="display: grid; grid-template-columns: 90px 1fr; gap: 4px;">
+          <input type="text" class="structured-block-input sb-date" value="${escapeHtml(m.date)}" placeholder="Q1 2026">
+          <input type="text" class="structured-block-input sb-title" value="${escapeHtml(m.title)}" placeholder="Milestone Title">
+        </div>
+        <textarea rows="1" class="structured-block-textarea sb-desc" placeholder="Outcome or deliverable...">${escapeHtml(m.desc || '')}</textarea>
+      </div>
+    `).join('');
+  } else if (slide.layout === 'layout-process-flow') {
+    if (labelEl) labelEl.textContent = 'Process Steps';
+    if (hintEl) hintEl.textContent = 'Card editor';
+    const steps = parseProcessFlowContent(slide.body);
+    html = steps.map((s, i) => `
+      <div class="structured-block-card" data-card-idx="${i}">
+        <div class="structured-block-card-header"><span>Step 0${i + 1}</span></div>
+        <input type="text" class="structured-block-input sb-title" value="${escapeHtml(s.title)}" placeholder="Step Title">
+        <textarea rows="1" class="structured-block-textarea sb-desc" placeholder="Step action...">${escapeHtml(s.desc || '')}</textarea>
+      </div>
+    `).join('');
+  } else if (slide.layout === 'layout-comparison') {
+    if (labelEl) labelEl.textContent = 'Side-by-Side Comparison';
+    if (hintEl) hintEl.textContent = 'Card editor';
+    const comp = parseComparisonContent(slide.body);
+    const leftText = [comp.left.title, ...(comp.left.bullets || [])].filter(Boolean).join('\n');
+    const rightText = [comp.right.title, ...(comp.right.bullets || [])].filter(Boolean).join('\n');
+    html = `
+      <div class="structured-block-card" data-card-idx="0">
+        <div class="structured-block-card-header"><span>Left Column (Baseline / Before)</span></div>
+        <textarea rows="3" class="structured-block-textarea sb-desc" placeholder="Title on line 1, points below...">${escapeHtml(leftText)}</textarea>
+      </div>
+      <div class="structured-block-card" data-card-idx="1" style="border-left-color: var(--tn-state-red);">
+        <div class="structured-block-card-header" style="color: var(--tn-state-red);"><span>Right Column (Reform / After)</span></div>
+        <textarea rows="3" class="structured-block-textarea sb-desc" placeholder="Title on line 1, points below...">${escapeHtml(rightText)}</textarea>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
+  container.querySelectorAll('input, textarea').forEach(el => {
+    el.addEventListener('input', syncFromCards);
+  });
+}
+
+function updateCanvasQuickActionPill(slide) {
+  const btnFlip = document.getElementById('btn-pill-flip-sides');
+  if (btnFlip && slide) {
+    const isSplit = !slide.layout || slide.layout === 'layout-split';
+    btnFlip.style.display = isSplit ? 'inline-flex' : 'none';
+  }
+}
+
 function loadSlideIntoForm(idx) {
   const slide = appData.slides[idx];
   if (!slide) return;
@@ -698,6 +833,8 @@ function loadSlideIntoForm(idx) {
   }
 
   checkBrevity(slide.body || '');
+  renderStructuredBlockEditor(slide);
+  updateCanvasQuickActionPill(slide);
   updateSmartLayoutSuggestions(slide.body || '', slide.layout || 'layout-split');
   updateSmartIconSuggestions(slide);
   updateDrawerBadges(slide);
@@ -841,6 +978,11 @@ function updateSlideFromForm(reanimate = false) {
   markDirty();
   renderCurrentSlide(shouldReanimate);
   checkBrevity(slide.body || '');
+  const structuredContainer = document.getElementById('structured-block-editor');
+  if (!structuredContainer || !structuredContainer.contains(document.activeElement)) {
+    renderStructuredBlockEditor(slide);
+  }
+  updateCanvasQuickActionPill(slide);
   updateSmartLayoutSuggestions(slide.body || '', selectLayout.value);
   updateSmartIconSuggestions(slide);
   updateDrawerBadges(slide);

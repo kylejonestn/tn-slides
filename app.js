@@ -274,6 +274,51 @@ function setupEventListeners() {
     });
   }
 
+  // Raw Text / Card View Toggle for Structured Layouts
+  const btnToggleRawBody = document.getElementById('btn-toggle-raw-body');
+  if (btnToggleRawBody) {
+    btnToggleRawBody.addEventListener('click', () => {
+      isRawBodyMode = !isRawBodyMode;
+      const slide = appData.slides[currentSlideIndex];
+      if (slide && typeof renderStructuredBlockEditor === 'function') {
+        renderStructuredBlockEditor(slide);
+      }
+    });
+  }
+
+  // Floating Canvas Quick-Action Pill
+  const btnPillSwap = document.getElementById('btn-pill-swap-layout');
+  if (btnPillSwap) btnPillSwap.addEventListener('click', () => openLayoutGallery());
+
+  const btnPillFlip = document.getElementById('btn-pill-flip-sides');
+  if (btnPillFlip) {
+    btnPillFlip.addEventListener('click', () => {
+      if (selectImagePlacement) {
+        selectImagePlacement.value = selectImagePlacement.value === 'split-left' ? 'split-right' : 'split-left';
+        updateSlideFromForm(false);
+      }
+    });
+  }
+
+  const btnPillWatermark = document.getElementById('btn-pill-watermark');
+  if (btnPillWatermark) {
+    btnPillWatermark.addEventListener('click', () => {
+      const outlineTab = document.querySelector('.sidebar-tab-btn[data-tab="outline"]');
+      if (outlineTab) outlineTab.click();
+      const drawer = document.getElementById('drawer-slide-bg-icon');
+      if (drawer) {
+        drawer.open = true;
+        setTimeout(() => drawer.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
+      }
+    });
+  }
+
+  const btnPillDuplicate = document.getElementById('btn-pill-duplicate');
+  if (btnPillDuplicate) btnPillDuplicate.addEventListener('click', () => duplicateSlide(currentSlideIndex));
+
+  const btnPillAddBlock = document.getElementById('btn-pill-add-block');
+  if (btnPillAddBlock) btnPillAddBlock.addEventListener('click', () => openAddBlockModal());
+
   // Duplicate Slide
   const btnDupSlide = document.getElementById('btn-duplicate-slide');
   if (btnDupSlide) {
