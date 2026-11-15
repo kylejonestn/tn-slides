@@ -578,9 +578,12 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
     let isBreak = false;
     let nextCategory = null;
 
+    const currentHasOnlyTags = currentSlide && currentSlide.lines.length > 0 &&
+      currentSlide.lines.every(l => /^(?:\[(?:layout|icon|watermark):[^\]]+\]\s*)+$/i.test(l.trimmed));
+
     if (i === 0) {
       isBreak = true;
-    } else if (item.isMarkdownHeading || item.isExplicitSlide) {
+    } else if ((item.isMarkdownHeading || item.isExplicitSlide) && !currentHasOnlyTags) {
       isBreak = true;
     } else if (hasMarkdownHeadings || splitStrategy === 'headings-only') {
       // In markdown heading mode, only dividers or explicit headings break slides
@@ -597,7 +600,7 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
         if (boldMatch) {
           nextCategory = boldMatch[1].trim();
         }
-      } else if (!item.isBulletItem && !item.isQuote && item.indent <= rootIndent + 1 && item.trimmed.length < 50) {
+      } else if (!item.isBulletItem && !item.isQuote && item.indent <= rootIndent + 1 && item.trimmed.length < 50 && !currentHasOnlyTags) {
         isBreak = true;
       } else if (prevItem && prevItem.isDivider) {
         isBreak = true;
@@ -670,15 +673,81 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
     let quoteText = '';
     let quoteAuthor = '';
     let citation = '';
+    let explicitLayout = '';
+    let explicitIcon = '';
+    let explicitStatNumber = '';
+    let explicitStatLabel = '';
 
-    for (let i = 1; i < chunkLines.length; i++) {
+    // Helper to extract [layout: ...] and [icon: ...] / [watermark: ...] tags from a line
+    function extractBracketTags(str) {
+      let cleaned = str;
+      const layoutMatch = cleaned.match(/\[layout:\s*([a-z0-9\-_]+)\]/i);
+      if (layoutMatch) {
+        let rawL = layoutMatch[1].trim().toLowerCase();
+        if (!rawL.startsWith('layout-')) rawL = 'layout-' + rawL;
+        explicitLayout = rawL;
+        cleaned = cleaned.replace(layoutMatch[0], '').trim();
+      }
+      const iconMatch = cleaned.match(/\[(?:icon|watermark):\s*([^\]]+)\]/i);
+      if (iconMatch) {
+        let rawI = iconMatch[1].trim();
+        if (rawI && !/\bfa-(?:solid|regular|brands)\b/.test(rawI)) {
+          rawI = 'fa-solid ' + (rawI.startsWith('fa-') ? rawI : 'fa-' + rawI);
+        }
+        explicitIcon = rawI;
+        cleaned = cleaned.replace(iconMatch[0], '').trim();
+      }
+      return cleaned;
+    }
+
+    // Check title line itself for inline [layout: ...] or [icon: ...] tags
+    cleanTitle = extractBracketTags(cleanTitle);
+    let bodyStartIndex = 1;
+    if (!cleanTitle && chunkLines.length > 1) {
+      const nextHeader = extractBracketTags(chunkLines[1].trimmed)
+        .replace(/^#{1,6}\s+/, '')
+        .replace(/^slide\s*\d+[:\-.]?\s*/i, '')
+        .replace(/^[•\-\*\+]\s+/, '')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .trim();
+      if (nextHeader) {
+        cleanTitle = nextHeader;
+        bodyStartIndex = 2;
+      }
+    }
+
+    for (let i = bodyStartIndex; i < chunkLines.length; i++) {
       const lineObj = chunkLines[i];
-      let lineText = lineObj.trimmed;
+      let lineText = extractBracketTags(lineObj.trimmed);
       if (!lineText) continue;
 
+      // Check for explicit Kicker / Subtitle
+      if (/^(?:kicker|subtitle|eyebrow):\s*/i.test(lineText)) {
+        kicker = lineText.replace(/^(?:kicker|subtitle|eyebrow):\s*/i, '').trim().toUpperCase();
+        continue;
+      }
+
+      // Check for Stat / Headline
+      if (/^(?:stat|metric):\s*/i.test(lineText)) {
+        explicitStatNumber = lineText.replace(/^(?:stat|metric):\s*/i, '').trim();
+        continue;
+      }
+      if (/^(?:headline|stat\s*label):\s*/i.test(lineText)) {
+        explicitStatLabel = lineText.replace(/^(?:headline|stat\s*label):\s*/i, '').trim();
+        continue;
+      }
+
       // Check for quote
-      if (lineObj.isQuote || /^>\s*/.test(lineText)) {
-        quoteText = lineText.replace(/^>\s*/, '').replace(/^[“"']+|[”"']+$/g, '').trim();
+      if (lineObj.isQuote || /^>\s*/.test(lineText) || /^quote:\s*/i.test(lineText)) {
+        let qRaw = lineText.replace(/^>\s*/, '').replace(/^quote:\s*/i, '').trim();
+        const authorSplit = qRaw.match(/^(.*?)\s+(?:—|--|-)\s+([^—]+)$/);
+        if (authorSplit) {
+          quoteText = authorSplit[1].replace(/^[“"']+|[”"']+$/g, '').trim();
+          quoteAuthor = authorSplit[2].trim();
+        } else {
+          quoteText = qRaw.replace(/^[“"']+|[”"']+$/g, '').trim();
+        }
         continue;
       }
 
@@ -702,7 +771,7 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
         continue;
       }
 
-      // Clean bullet line
+      // Clean bullet line (preserve colons for structured cards like "Priority: Description")
       let cleanBullet = lineText.replace(/^[•\-\*\+]\s+/, '').trim();
       cleanBullet = cleanBullet.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1').replace(/==([^=]+)==/g, '$1');
 
@@ -711,14 +780,26 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
       }
     }
 
-    // Layout detection
+    // If the AI put [layout: ...] on its own line as headerLine, promote the first bullet to title
+    if (!cleanTitle && bullets.length > 0) {
+      cleanTitle = bullets.shift();
+    }
+
+    // Layout detection (explicit [layout: ...] tag wins if valid)
     let layout = 'layout-split-50';
     let animationType = 'push';
     const lowerTitle = cleanTitle.toLowerCase();
     const bodyStr = bullets.join('\n');
     const lowerBody = bodyStr.toLowerCase();
 
-    if (autoLayouts) {
+    const validLayouts = (typeof LAYOUT_GALLERY_ITEMS !== 'undefined' && Array.isArray(LAYOUT_GALLERY_ITEMS))
+      ? LAYOUT_GALLERY_ITEMS.map(item => item.id)
+      : [];
+
+    if (explicitLayout && (validLayouts.length === 0 || validLayouts.includes(explicitLayout))) {
+      layout = explicitLayout;
+      animationType = (layout === 'layout-pillars-3' || layout === 'layout-pillars-4' || layout === 'layout-bento-3') ? 'wiggle' : 'push';
+    } else if (autoLayouts) {
       if (slideIdx === 0 && (lowerTitle.includes('talk') || lowerTitle.includes('outline') || lowerTitle.includes('welcome') || lowerTitle.includes('briefing') || bullets.length <= 1)) {
         layout = 'layout-cover-blue-banner';
         animationType = 'fade';
@@ -748,6 +829,14 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
       bodyContent = quoteText;
     }
 
+    // For stat-callout, allow "# 94%" as title -> statNumber if Stat: wasn't specified
+    let statNumber = explicitStatNumber || 'AAA';
+    let statLabel = explicitStatLabel || 'State Target Metric';
+    if (layout === 'layout-stat-callout' && !explicitStatNumber && /^[\d$%.,+\-<>a-zA-Z]{1,10}$/.test(cleanTitle)) {
+      statNumber = cleanTitle;
+      if (explicitStatLabel) statLabel = explicitStatLabel;
+    }
+
     return {
       id: `slide-${Date.now()}-${slideIdx}`,
       layout: layout,
@@ -757,10 +846,11 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
       body: bodyContent,
       authorName: 'State of Tennessee',
       authorDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-      statNumber: 'AAA',
-      statLabel: 'State Target Metric',
+      statNumber: statNumber,
+      statLabel: statLabel,
       quote: quoteText || '',
       quoteAuthor: quoteAuthor || '',
+      watermarkIcon: explicitIcon || '',
       animate: true,
       animationType: animationType,
       mediaUrl: '',
@@ -774,6 +864,107 @@ function parseOutlineText(rawText, autoLayouts = true, splitStrategy = 'smart') 
   });
 
   return slides;
+}
+
+function getAiOutlinePromptText() {
+  return `You are a presentation architect for TN Slides. Convert my topic or notes into a structured Markdown deck outline that pastes directly into TN Slides.
+
+FORMAT RULES:
+- Separate every slide with a horizontal rule: ---
+- Start each slide with optional layout & FontAwesome watermark tags: [layout: <layout-id>] [icon: fa-<name>]
+- Follow with # Slide Title
+- Optional metadata lines:
+  Kicker: SHORT CATEGORY TAG
+  Notes: Concise speaker talking points
+  Citation: T.C.A. § ... (if applicable)
+- Keep bullets concise (3–4 bullets max per slide, <= 12 words each).
+
+AVAILABLE LAYOUTS (choose the best fit per slide):
+- cover-blue-banner : Opening title slide (Title + Kicker)
+- agenda : Numbered meeting agenda (3–5 items)
+- section-break : Bold chapter divider between topics
+- pillars-3 : 3 equal strategic pillars (format bullets as **Title:** Short description)
+- pillars-4 : 4 equal strategic pillars (format bullets as **Title:** Short description)
+- process-flow : 3–4 sequential steps (format bullets as **Step Name:** Action)
+- timeline : 3–5 chronological milestones (format bullets as **Q1 2026:** Milestone)
+- comparison : Side-by-side Before vs. After (format bullets as **Before:** ... and **After:** ...)
+- stat-callout : Big hero number (use # 94% or Stat: 94% and Headline: Metric description)
+- quote : Executive quote (use > "Quote text" — Author Name)
+- bento-3 : 3-card grid summary
+- split : Text + Photo/Media placeholder
+- tn-map : Tennessee Grand Divisions regional highlight
+- thank-you : Closing slide with contact info
+
+EXAMPLE OUTPUT:
+---
+[layout: cover-blue-banner] [icon: fa-landmark]
+# Q3 Broadband Expansion Update
+Kicker: DEPARTMENT OF ECONOMIC DEVELOPMENT
+Notes: Welcome everyone. Today we cover our Q3 rural broadband milestones.
+---
+[layout: pillars-3] [icon: fa-network-wired]
+# Three Core Priorities
+- **Fiber Backbone:** 420 miles of middle-mile conduit completed
+- **County Grants:** $18M awarded across 14 distressed counties
+- **Digital Skills:** 28 community training hubs launched
+Notes: Highlight that all 14 counties are in Tier 1 & Tier 2 regions.
+
+Here are my notes / topic to turn into a TN Slides outline:
+[PASTE YOUR TOPIC OR NOTES HERE]`;
+}
+
+function copyAiOutlinePrompt(btnEl) {
+  const promptText = getAiOutlinePromptText();
+  const finishFeedback = () => {
+    if (!btnEl) return;
+    const origHtml = btnEl.innerHTML;
+    btnEl.innerHTML = '<i class="fa-solid fa-check"></i> Prompt Copied!';
+    btnEl.classList.add('btn-success-flash');
+    setTimeout(() => {
+      btnEl.innerHTML = origHtml;
+      btnEl.classList.remove('btn-success-flash');
+    }, 2200);
+  };
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(promptText).then(finishFeedback).catch(() => {
+      fallbackCopyText(promptText);
+      finishFeedback();
+    });
+  } else {
+    fallbackCopyText(promptText);
+    finishFeedback();
+  }
+}
+
+function fallbackCopyText(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (_) {}
+  document.body.removeChild(ta);
+}
+
+function downloadAiSkillFile() {
+  const skillContent = `---
+name: tn-slides-outline
+description: Generate layout-aware Markdown slide outlines that paste directly into TN Slides Studio with automatic layouts, structured cards, FontAwesome watermarks, and speaker notes.
+---
+
+${getAiOutlinePromptText()}
+`;
+  const blob = new Blob([skillContent], { type: 'text/markdown;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'TN-Slides-Skill.md';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function getParsedSlides(autoLayouts) {

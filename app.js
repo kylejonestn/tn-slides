@@ -1402,7 +1402,34 @@ function setupEventListeners() {
   const btnDownloadHtml = document.getElementById('btn-download-html');
   if (btnDownloadHtml) {
     btnDownloadHtml.addEventListener('click', () => {
-      downloadFileFallback(generateUpdatedHtmlFile(), 'tn-presentation.html');
+      const fname = typeof getDeckSlugFilename === 'function' ? getDeckSlugFilename() : 'tn-presentation.html';
+      downloadFileFallback(generateUpdatedHtmlFile(), fname);
+    });
+  }
+
+  // Use Your Own AI: Copy Prompt & Download Skill (.md)
+  const btnCopyAiMenu = document.getElementById('btn-copy-ai-prompt-menu');
+  if (btnCopyAiMenu) {
+    btnCopyAiMenu.addEventListener('click', () => {
+      if (typeof copyAiOutlinePrompt === 'function') copyAiOutlinePrompt(btnCopyAiMenu);
+    });
+  }
+  const btnDownloadSkillMenu = document.getElementById('btn-download-ai-skill-menu');
+  if (btnDownloadSkillMenu) {
+    btnDownloadSkillMenu.addEventListener('click', () => {
+      if (typeof downloadAiSkillFile === 'function') downloadAiSkillFile();
+    });
+  }
+  const btnCopyAiStep1 = document.getElementById('btn-copy-ai-prompt-step1');
+  if (btnCopyAiStep1) {
+    btnCopyAiStep1.addEventListener('click', () => {
+      if (typeof copyAiOutlinePrompt === 'function') copyAiOutlinePrompt(btnCopyAiStep1);
+    });
+  }
+  const btnDownloadSkillStep1 = document.getElementById('btn-download-ai-skill-step1');
+  if (btnDownloadSkillStep1) {
+    btnDownloadSkillStep1.addEventListener('click', () => {
+      if (typeof downloadAiSkillFile === 'function') downloadAiSkillFile();
     });
   }
 
@@ -1592,6 +1619,12 @@ function setupEventListeners() {
         if (e.ctrlKey || e.metaKey) {
           e.preventDefault();
           saveToFileSystem();
+        }
+        break;
+      case 'o':
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          openExistingPresentationFile();
         }
         break;
     }

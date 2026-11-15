@@ -5948,32 +5948,23 @@ to any subsystem in this codebase.
             </button>
 
             <div class="dropdown-divider"></div>
-            <div class="dropdown-header">Project &amp; Disk Storage</div>
+            <div class="dropdown-header">Deck File (.html)</div>
 
-            <!-- Save to Disk (Self-Editing) -->
-            <button type="button" class="dropdown-item" id="btn-self-save" title="Save directly back to this HTML file on disk">
+            <!-- Save Deck (Portable Smart-Deck HTML) -->
+            <button type="button" class="dropdown-item" id="btn-self-save" title="Save as a self-contained, presentable Smart-Deck HTML file">
               <i class="fa-solid fa-floppy-disk dropdown-icon"></i>
               <div class="dropdown-content">
-                <span class="dropdown-title">Save to HTML File <span style="font-size: 0.68rem; color: var(--tn-slate-500); font-weight: normal;">Ctrl+S</span></span>
-                <span class="dropdown-desc">Direct disk update &amp; embedded state</span>
+                <span class="dropdown-title">Save Deck (.html) <span style="font-size: 0.68rem; color: var(--tn-slate-500); font-weight: normal;">Ctrl+S</span></span>
+                <span class="dropdown-desc">Self-contained player + Quick Edit + Studio state</span>
               </div>
             </button>
 
-            <!-- Open Existing File -->
-            <button type="button" class="dropdown-item" id="btn-open-file" title="Open an existing HTML presentation from your disk">
+            <!-- Open Deck -->
+            <button type="button" class="dropdown-item" id="btn-open-file" title="Open any saved TN Slides Smart-Deck HTML file">
               <i class="fa-solid fa-folder-open dropdown-icon"></i>
               <div class="dropdown-content">
-                <span class="dropdown-title">Open HTML Presentation... <span style="font-size: 0.68rem; color: var(--tn-slate-500); font-weight: normal;">Ctrl+O</span></span>
-                <span class="dropdown-desc">Load presentation deck from disk</span>
-              </div>
-            </button>
-
-            <!-- Save Project Folder -->
-            <button type="button" class="dropdown-item" id="btn-save-project-folder" title="Save unbundled project folder (index.html + assets/ + fonts/)">
-              <i class="fa-solid fa-box-archive dropdown-icon"></i>
-              <div class="dropdown-content">
-                <span class="dropdown-title">Save Project Folder</span>
-                <span class="dropdown-desc">Unbundled assets and clean HTML</span>
+                <span class="dropdown-title">Open Deck (.html)... <span style="font-size: 0.68rem; color: var(--tn-slate-500); font-weight: normal;">Ctrl+O</span></span>
+                <span class="dropdown-desc">Resume editing any saved Smart-Deck file</span>
               </div>
             </button>
 
@@ -6325,6 +6316,22 @@ to any subsystem in this codebase.
                     <div class="dropdown-content">
                       <span class="dropdown-title">PowerPoint (.pptx)</span>
                       <span class="dropdown-desc">Convert existing deck to TN brand</span>
+                    </div>
+                  </button>
+                  <div class="dropdown-divider"></div>
+                  <div class="dropdown-header">Use Your Own AI</div>
+                  <button type="button" class="dropdown-item" id="btn-copy-ai-prompt-menu" title="Copy a layout-aware prompt for ChatGPT, Claude, Gemini, or Copilot">
+                    <i class="fa-solid fa-wand-magic-sparkles dropdown-icon"></i>
+                    <div class="dropdown-content">
+                      <span class="dropdown-title">Copy AI Outline Prompt</span>
+                      <span class="dropdown-desc">Paste into ChatGPT, Claude, or Gemini</span>
+                    </div>
+                  </button>
+                  <button type="button" class="dropdown-item" id="btn-download-ai-skill-menu" title="Download TN-Slides-Skill.md for Claude Projects, Custom GPTs, or Gems">
+                    <i class="fa-solid fa-file-code dropdown-icon"></i>
+                    <div class="dropdown-content">
+                      <span class="dropdown-title">Download AI Skill (.md)</span>
+                      <span class="dropdown-desc">Attach to your AI workspace</span>
                     </div>
                   </button>
                 </div>
@@ -7347,11 +7354,11 @@ to any subsystem in this codebase.
           <div class="export-card-row">
             <div style="flex: 1;">
               <div style="display: flex; align-items: center; gap: 6px;">
-                <strong style="color: var(--tn-navy); font-size: 0.9rem;">Self-Contained HTML Presentation (.html)</strong>
+                <strong style="color: var(--tn-navy); font-size: 0.9rem;">Portable Smart-Deck HTML (.html)</strong>
                 <span class="tn-badge-tag" style="background: var(--tn-navy); color: #fff;">Single File</span>
               </div>
               <p style="font-size: 0.75rem; color: var(--tn-slate-600); margin-top: 2px;">
-                Single portable file with built-in presentation mode, editor, and self-saving code. Runs offline in any browser.
+                Opens as a clean 16:9 Presentation Player with built-in Quick Edit (press <code>E</code>) and lossless Studio re-open.
               </p>
             </div>
             <button class="btn btn-gold" id="btn-download-html" style="white-space: nowrap; font-weight: 700;">
@@ -7486,7 +7493,13 @@ to any subsystem in this codebase.
                 <i class="fa-solid fa-keyboard"></i> Markdown / Text
               </button>
             </div>
-            <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-sm btn-outline-dark" id="btn-copy-ai-prompt-step1" style="font-size: 0.725rem; padding: 2px 8px; font-weight: 600; border-color: var(--tn-navy); color: var(--tn-navy);" title="Copy layout-aware prompt for ChatGPT, Claude, or Gemini">
+                <i class="fa-solid fa-robot"></i> Copy AI Prompt
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-dark" id="btn-download-ai-skill-step1" style="font-size: 0.725rem; padding: 2px 8px; font-weight: 600;" title="Download TN-Slides-Skill.md for your AI workspace">
+                <i class="fa-solid fa-file-code"></i> Skill (.md)
+              </button>
               <button type="button" class="btn btn-sm btn-outline-dark" id="btn-insert-blank-agenda" style="font-size: 0.725rem; padding: 2px 8px; font-weight: 600;" title="Load clean starter template">
                 <i class="fa-solid fa-file"></i> Blank Starter
               </button>

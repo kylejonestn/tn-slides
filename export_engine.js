@@ -21,45 +21,532 @@ function markClean() {
   if (btnSave) btnSave.classList.remove('has-unsaved');
 }
 
+function getDeckSlugFilename() {
+  const rawTitle = (appData && (appData.deckTitle || (appData.slides && appData.slides[0] && appData.slides[0].title))) || 'tn-presentation';
+  const slug = String(rawTitle)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return (slug || 'tn-presentation') + '.html';
+}
+
+function escapeHtmlSafe(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function generatePortableDeckHtml() {
+  const deckTitle = (appData && (appData.deckTitle || (appData.slides && appData.slides[0] && appData.slides[0].title))) || 'TN Slides Presentation';
+  const theme = (appData && appData.theme) || 'theme-dept-blue-banner';
+  const aspectRatio = (appData && appData.aspectRatio) || '16:9';
+  const baseWidth = 960;
+  const baseHeight = aspectRatio === '4:3' ? 720 : 540;
+  const customBrandColor = (appData && appData.customBrandColor) || '';
+
+  // Collect all inline <style> blocks from the studio so every slide layout renders identically
+  const studioStyles = Array.from(document.querySelectorAll('style'))
+    .filter(s => s.id !== 'tn-portable-player-styles')
+    .map(s => s.textContent)
+    .join('\n\n');
+
+  // Pre-render each slide using the exact studio renderer
+  const slidesDataHtml = (appData && Array.isArray(appData.slides) ? appData.slides : []).map((slide, idx) => {
+    const rendered = typeof buildSlideHtml === 'function' ? buildSlideHtml(slide, idx) : `<h1>${escapeHtmlSafe(slide.title)}</h1>`;
+    const isBgBleed = slide.imagePlacement === 'bg-bleed' && slide.mediaUrl;
+    const bgUrl = isBgBleed ? escapeHtmlSafe(slide.mediaUrl) : '';
+    const mapClass = slide.layout === 'layout-tn-map' ? 'layout-stage-tn-map' : '';
+    return `<div class="tn-deck-slide-data" data-slide-index="${idx}" data-layout="${escapeHtmlSafe(slide.layout || '')}" data-bg="${bgUrl}" data-map-class="${mapClass}" hidden>${rendered}</div>`;
+  }).join('\n');
+
+  const safeJson = JSON.stringify(appData, null, 2).replace(/<\/script>/gi, '<\\/script>');
+
+  const playerCss = `
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0b1324;
+      color: #f8fafc;
+      font-family: 'Open Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+    #tn-deck-player {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #13203b 0%, #070d19 100%);
+    }
+    #tn-player-viewport {
+      position: relative;
+      width: ${baseWidth}px;
+      height: ${baseHeight}px;
+      background: #ffffff;
+      border-radius: 6px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+      overflow: hidden;
+      transform-origin: center center;
+    }
+    #tn-player-stage {
+      width: ${baseWidth}px;
+      height: ${baseHeight}px;
+      position: relative;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    #tn-player-hud {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 6px 12px;
+      border-radius: 999px;
+      z-index: 900;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      transition: opacity 0.25s ease;
+    }
+    .tn-hud-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: #e2e8f0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .tn-hud-btn:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+    .tn-hud-btn.active { background: #c59b27; color: #0f172a; }
+    .tn-hud-btn.save-btn { background: #16a34a; color: #ffffff; display: none; }
+    .tn-hud-btn.save-btn:hover { background: #15803d; }
+    body.quick-edit-active .tn-hud-btn.save-btn { display: inline-flex; }
+    .tn-hud-counter {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      padding: 0 8px;
+      min-width: 54px;
+      text-align: center;
+    }
+    .tn-hud-divider {
+      width: 1px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.16);
+      margin: 0 2px;
+    }
+    #tn-quick-edit-banner {
+      position: fixed;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #002d72;
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      z-index: 950;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    body.quick-edit-active #tn-quick-edit-banner { display: flex; }
+    body.quick-edit-active #tn-player-stage [contenteditable="true"] {
+      outline: 1.5px dashed rgba(197, 155, 39, 0.75);
+      outline-offset: 2px;
+      border-radius: 3px;
+      cursor: text;
+    }
+    body.quick-edit-active #tn-player-stage [contenteditable="true"]:focus {
+      outline: 2px solid #c59b27;
+      background: rgba(255, 251, 235, 0.12);
+    }
+    #tn-notes-drawer {
+      position: fixed;
+      right: 18px;
+      bottom: 72px;
+      width: min(380px, calc(100vw - 36px));
+      background: rgba(15, 23, 42, 0.94);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #f1f5f9;
+      z-index: 900;
+      display: none;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    }
+    #tn-notes-drawer.open { display: block; }
+    #tn-notes-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #c59b27;
+      margin-bottom: 8px;
+    }
+    #tn-notes-text {
+      width: 100%;
+      min-height: 84px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 6px;
+      color: #f8fafc;
+      font-family: inherit;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      padding: 8px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+    #tn-notes-text[readonly] {
+      border-color: transparent;
+      background: transparent;
+      padding: 0;
+    }
+  `;
+
+  const playerJs = `
+    (function() {
+      const dataEl = document.getElementById('tn-presentation-data');
+      const deckData = dataEl ? JSON.parse(dataEl.textContent) : { slides: [] };
+      const slideContainers = Array.from(document.querySelectorAll('.tn-deck-slide-data'));
+      const stage = document.getElementById('tn-player-stage');
+      const viewport = document.getElementById('tn-player-viewport');
+      const counterEl = document.getElementById('tn-hud-counter');
+      const notesDrawer = document.getElementById('tn-notes-drawer');
+      const notesTextarea = document.getElementById('tn-notes-text');
+      const btnQuickEdit = document.getElementById('tn-btn-quick-edit');
+      const btnNotes = document.getElementById('tn-btn-notes');
+      const btnSaveCopy = document.getElementById('tn-btn-save-copy');
+      const btnDoneEdit = document.getElementById('tn-btn-done-edit');
+
+      let currentIdx = 0;
+      let isQuickEdit = false;
+      const baseW = ${baseWidth};
+      const baseH = ${baseHeight};
+      const deckTheme = '${escapeHtmlSafe(theme)}';
+
+      function scaleViewport() {
+        const padW = window.innerWidth - 32;
+        const padH = window.innerHeight - 96;
+        const scale = Math.min(padW / baseW, padH / baseH, 1.8);
+        viewport.style.transform = 'scale(' + Math.max(0.25, scale) + ')';
+      }
+
+      function getEditableSelectors() {
+        return 'h1, h2, h3, h4, p, li, .slide-kicker, .slide-title, .slide-subtitle, .pillar-title, .pillar-desc, .timeline-title, .timeline-desc, .stat-number, .stat-label, .quote-text, .quote-author';
+      }
+
+      function flushCurrentSlideEdits() {
+        if (!isQuickEdit) return;
+        const container = slideContainers[currentIdx];
+        if (!container) return;
+
+        // Strip contenteditable before storing back into slide template
+        const clone = stage.cloneNode(true);
+        clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+        container.innerHTML = clone.innerHTML;
+
+        // Sync text fields back to JSON payload for 100% round-trip fidelity in TN Slides Studio
+        const slideObj = deckData.slides && deckData.slides[currentIdx];
+        if (slideObj) {
+          const titleEl = stage.querySelector('.slide-title, h1, h2');
+          const kickerEl = stage.querySelector('.slide-kicker, .kicker');
+          const bulletEls = Array.from(stage.querySelectorAll('.slide-bullets li, ul li, ol li'));
+          if (titleEl) slideObj.title = titleEl.innerText.trim();
+          if (kickerEl) slideObj.kicker = kickerEl.innerText.trim();
+          if (bulletEls.length > 0) {
+            slideObj.body = bulletEls.map(li => li.innerText.trim()).filter(Boolean).join('\\n');
+          }
+          if (notesTextarea) slideObj.notes = notesTextarea.value;
+          if (dataEl) {
+            dataEl.textContent = '\\n' + JSON.stringify(deckData, null, 2) + '\\n  ';
+          }
+        }
+      }
+
+      function applyQuickEditToStage() {
+        stage.querySelectorAll(getEditableSelectors()).forEach(el => {
+          if (isQuickEdit) {
+            el.setAttribute('contenteditable', 'true');
+          } else {
+            el.removeAttribute('contenteditable');
+          }
+        });
+        if (notesTextarea) {
+          notesTextarea.readOnly = !isQuickEdit;
+        }
+      }
+
+      function renderSlide(idx) {
+        if (slideContainers.length === 0) return;
+        if (isQuickEdit) flushCurrentSlideEdits();
+        currentIdx = Math.max(0, Math.min(idx, slideContainers.length - 1));
+        const src = slideContainers[currentIdx];
+        const bgUrl = src.getAttribute('data-bg') || '';
+        const mapCls = src.getAttribute('data-map-class') || '';
+        stage.innerHTML = src.innerHTML;
+        stage.className = 'slide-stage ' + deckTheme + (bgUrl ? ' has-bg-image' : '') + ' ' + mapCls;
+        stage.style.backgroundImage = bgUrl ? "url('" + bgUrl + "')" : '';
+        counterEl.textContent = (currentIdx + 1) + ' / ' + slideContainers.length;
+
+        const slideObj = (deckData.slides && deckData.slides[currentIdx]) || {};
+        if (notesTextarea) {
+          notesTextarea.value = slideObj.notes || '';
+        }
+        applyQuickEditToStage();
+      }
+
+      function toggleQuickEdit(force) {
+        if (isQuickEdit && force !== true) {
+          flushCurrentSlideEdits();
+        }
+        isQuickEdit = typeof force === 'boolean' ? force : !isQuickEdit;
+        document.body.classList.toggle('quick-edit-active', isQuickEdit);
+        btnQuickEdit.classList.toggle('active', isQuickEdit);
+        if (isQuickEdit && notesDrawer) {
+          notesDrawer.classList.add('open');
+          btnNotes.classList.add('active');
+        }
+        applyQuickEditToStage();
+      }
+
+      async function saveUpdatedCopy() {
+        flushCurrentSlideEdits();
+        const wasEditing = isQuickEdit;
+        if (wasEditing) toggleQuickEdit(false);
+
+        const docClone = document.documentElement.cloneNode(true);
+        const clonedBody = docClone.querySelector('body');
+        if (clonedBody) clonedBody.classList.remove('quick-edit-active');
+        const clonedNotes = docClone.querySelector('#tn-notes-drawer');
+        if (clonedNotes) clonedNotes.classList.remove('open');
+        const clonedStage = docClone.querySelector('#tn-player-stage');
+        if (clonedStage) clonedStage.innerHTML = '';
+
+        const htmlOut = '<!DOCTYPE html>\\n' + docClone.outerHTML;
+        const filename = '${escapeHtmlSafe(getDeckSlugFilename())}';
+
+        if ('showSaveFilePicker' in window) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: filename,
+              types: [{ description: 'TN Slides Smart-Deck HTML', accept: { 'text/html': ['.html'] } }]
+            });
+            const writable = await handle.createWritable();
+            await writable.write(htmlOut);
+            await writable.close();
+            if (wasEditing) toggleQuickEdit(true);
+            return;
+          } catch (e) {
+            if (e.name === 'AbortError') {
+              if (wasEditing) toggleQuickEdit(true);
+              return;
+            }
+          }
+        }
+        const blob = new Blob([htmlOut], { type: 'text/html;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (wasEditing) toggleQuickEdit(true);
+      }
+
+      document.getElementById('tn-btn-prev').addEventListener('click', () => renderSlide(currentIdx - 1));
+      document.getElementById('tn-btn-next').addEventListener('click', () => renderSlide(currentIdx + 1));
+      btnNotes.addEventListener('click', () => {
+        notesDrawer.classList.toggle('open');
+        btnNotes.classList.toggle('active', notesDrawer.classList.contains('open'));
+      });
+      document.getElementById('tn-btn-close-notes').addEventListener('click', () => {
+        notesDrawer.classList.remove('open');
+        btnNotes.classList.remove('active');
+      });
+      btnQuickEdit.addEventListener('click', () => toggleQuickEdit());
+      btnDoneEdit.addEventListener('click', () => toggleQuickEdit(false));
+      btnSaveCopy.addEventListener('click', saveUpdatedCopy);
+      document.getElementById('tn-btn-fullscreen').addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) || '';
+        const isTyping = (e.target && e.target.isContentEditable) || tag === 'TEXTAREA' || tag === 'INPUT';
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          saveUpdatedCopy();
+          return;
+        }
+        if (e.key === 'Escape') {
+          if (isQuickEdit) toggleQuickEdit(false);
+          else if (notesDrawer.classList.contains('open')) {
+            notesDrawer.classList.remove('open');
+            btnNotes.classList.remove('active');
+          }
+          return;
+        }
+        if (isTyping) return;
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+          e.preventDefault();
+          renderSlide(currentIdx + 1);
+        } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+          e.preventDefault();
+          renderSlide(currentIdx - 1);
+        } else if (e.key === 'Home') {
+          e.preventDefault();
+          renderSlide(0);
+        } else if (e.key === 'End') {
+          e.preventDefault();
+          renderSlide(slideContainers.length - 1);
+        } else if (e.key.toLowerCase() === 'e') {
+          e.preventDefault();
+          toggleQuickEdit();
+        } else if (e.key.toLowerCase() === 'n') {
+          e.preventDefault();
+          notesDrawer.classList.toggle('open');
+          btnNotes.classList.toggle('active', notesDrawer.classList.contains('open'));
+        } else if (e.key.toLowerCase() === 'f') {
+          e.preventDefault();
+          if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+          else document.exitFullscreen().catch(() => {});
+        }
+      });
+
+      window.addEventListener('resize', scaleViewport);
+      scaleViewport();
+      renderSlide(0);
+    })();
+  `;
+
+  const customColorStyle = customBrandColor ? ` style="--tn-navy: ${escapeHtmlSafe(customBrandColor)};"` : '';
+
+  return `<!DOCTYPE html>
+<html lang="en"${customColorStyle}>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtmlSafe(deckTitle)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Roboto+Slab:wght@400;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+${studioStyles}
+  </style>
+  <style id="tn-portable-player-styles">
+${playerCss}
+  </style>
+</head>
+<body>
+  <div id="tn-quick-edit-banner">
+    <span><i class="fa-solid fa-pen-to-square"></i> Quick Edit Mode — Click any text on the slide or edit Speaker Notes</span>
+    <button type="button" class="tn-hud-btn" id="tn-btn-done-edit" style="background: rgba(255,255,255,0.16); padding: 4px 10px;">Done (Esc)</button>
+  </div>
+
+  <main id="tn-deck-player" aria-label="Presentation Player">
+    <div id="tn-player-viewport">
+      <div id="tn-player-stage" class="slide-stage ${escapeHtmlSafe(theme)}"></div>
+    </div>
+  </main>
+
+  <aside id="tn-notes-drawer" aria-label="Speaker Notes">
+    <div id="tn-notes-drawer-header">
+      <span><i class="fa-solid fa-note-sticky"></i> Speaker Notes</span>
+      <button type="button" id="tn-btn-close-notes" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:1rem;">&times;</button>
+    </div>
+    <textarea id="tn-notes-text" readonly placeholder="No speaker notes for this slide."></textarea>
+  </aside>
+
+  <nav id="tn-player-hud" aria-label="Presentation Controls">
+    <button type="button" class="tn-hud-btn" id="tn-btn-prev" title="Previous Slide (Left Arrow)" aria-label="Previous Slide">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="tn-hud-counter" id="tn-hud-counter">1 / 1</span>
+    <button type="button" class="tn-hud-btn" id="tn-btn-next" title="Next Slide (Right Arrow / Space)" aria-label="Next Slide">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <span class="tn-hud-divider"></span>
+    <button type="button" class="tn-hud-btn" id="tn-btn-notes" title="Speaker Notes (N)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span>Notes</span>
+    </button>
+    <button type="button" class="tn-hud-btn" id="tn-btn-quick-edit" title="Quick Edit Last-Minute Typos (E)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span>Quick Edit</span>
+    </button>
+    <button type="button" class="tn-hud-btn save-btn" id="tn-btn-save-copy" title="Save Updated HTML Copy (Ctrl+S)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      <span>Save Copy</span>
+    </button>
+    <button type="button" class="tn-hud-btn" id="tn-btn-fullscreen" title="Fullscreen (F)" aria-label="Toggle Fullscreen">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+    </button>
+  </nav>
+
+  <!-- Pre-rendered Slide Snapshots -->
+  <div id="tn-deck-slides-store" hidden>
+${slidesDataHtml}
+  </div>
+
+  <!-- Lossless Round-Trip State for TN Slides Studio -->
+  <script type="application/json" id="tn-presentation-data">
+${safeJson}
+  </script>
+
+  <script>
+${playerJs}
+  </script>
+</body>
+</html>`;
+}
+
 function generateUpdatedHtmlFile() {
-  const docClone = document.documentElement.cloneNode(true);
-
-  const payloadScript = docClone.querySelector('#tn-presentation-data');
-  if (payloadScript) {
-    payloadScript.textContent = '\n' + JSON.stringify(appData, null, 2) + '\n  ';
-  }
-
-  const fullMode = docClone.querySelector('#fullscreen-presentation-overlay');
-  if (fullMode) fullMode.classList.remove('active');
-
-  const videoTheaterEl = docClone.querySelector('#fullscreen-video-theater');
-  if (videoTheaterEl) videoTheaterEl.classList.remove('active');
-  const videoMountEl = docClone.querySelector('#video-theater-player-mount');
-  if (videoMountEl) videoMountEl.innerHTML = '';
-
-  const modals = docClone.querySelectorAll('.modal-overlay');
-  modals.forEach(m => m.classList.remove('active'));
-
-  // Ensure exported header save button reflects clean persisted state
-  const saveBtn = docClone.querySelector('#btn-header-save');
-  if (saveBtn) {
-    saveBtn.classList.remove('dirty');
-    saveBtn.innerHTML = `<svg width="13" height="13" fill="currentColor" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Saved</span>`;
-  }
-
-  return '<!DOCTYPE html>\n' + docClone.outerHTML;
+  return generatePortableDeckHtml();
 }
 
 async function saveToFileSystem() {
-  const htmlContent = generateUpdatedHtmlFile();
+  const htmlContent = generatePortableDeckHtml();
+  const defaultName = getDeckSlugFilename();
 
   if ('showSaveFilePicker' in window) {
     try {
       if (!fileHandle) {
         fileHandle = await window.showSaveFilePicker({
-          suggestedName: 'index.html',
+          suggestedName: defaultName,
           types: [{
-            description: 'HTML Presentation File',
+            description: 'TN Slides Smart-Deck HTML',
             accept: { 'text/html': ['.html', '.htm'] }
           }]
         });
@@ -70,8 +557,7 @@ async function saveToFileSystem() {
       await writable.close();
 
       markClean();
-      recordSnapshot('Saved to File', 'Direct file overwrite save');
-      alert('Success! Presentation saved directly back to your local file.');
+      recordSnapshot('Saved Deck', `Saved Smart-Deck HTML (${defaultName})`);
       return;
     } catch (err) {
       if (err.name !== 'AbortError') {
@@ -82,8 +568,9 @@ async function saveToFileSystem() {
     }
   }
 
-  downloadFileFallback(htmlContent, 'tn-presentation.html');
+  downloadFileFallback(htmlContent, defaultName);
   markClean();
+  recordSnapshot('Saved Deck', `Downloaded Smart-Deck HTML (${defaultName})`);
 }
 
 async function openExistingPresentationFile() {
@@ -91,7 +578,7 @@ async function openExistingPresentationFile() {
     try {
       const [handle] = await window.showOpenFilePicker({
         types: [{
-          description: 'HTML Presentation File',
+          description: 'TN Slides Smart-Deck HTML',
           accept: { 'text/html': ['.html', '.htm'] }
         }]
       });
@@ -122,9 +609,12 @@ function loadPresentationFromHtmlString(htmlString) {
       currentSlideIndex = 0;
       init();
       markClean();
-      alert('Presentation loaded successfully!');
+      const filePopover = document.getElementById('popover-file-menu');
+      if (filePopover && filePopover.hidePopover) {
+        try { filePopover.hidePopover(); } catch (_) {}
+      }
     } else {
-      alert('Could not locate #tn-presentation-data in the selected file.');
+      alert('Could not locate #tn-presentation-data in the selected HTML file.');
     }
   } catch (e) {
     alert('Error parsing presentation file: ' + e.message);
