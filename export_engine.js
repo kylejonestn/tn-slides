@@ -226,6 +226,90 @@ function generatePortableDeckHtml() {
       background: transparent;
       padding: 0;
     }
+    #tn-mobile-edit-sheet {
+      display: none;
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      bottom: 68px;
+      background: rgba(15, 23, 42, 0.96);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(197, 155, 39, 0.45);
+      border-radius: 12px;
+      padding: 12px;
+      z-index: 920;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      max-height: 46vh;
+      overflow-y: auto;
+    }
+    #tn-mobile-edit-sheet label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #c59b27;
+      margin: 6px 0 3px;
+    }
+    #tn-mobile-edit-sheet label:first-child { margin-top: 0; }
+    #tn-mobile-edit-sheet input,
+    #tn-mobile-edit-sheet textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 6px;
+      color: #f8fafc;
+      font-family: inherit;
+      font-size: 0.85rem;
+      padding: 7px 9px;
+    }
+    #tn-mobile-edit-sheet textarea {
+      min-height: 62px;
+      resize: vertical;
+      line-height: 1.4;
+    }
+    @media (max-width: 767px) {
+      body.quick-edit-active #tn-deck-player {
+        justify-content: flex-start;
+        padding-top: 52px;
+      }
+      body.quick-edit-active #tn-mobile-edit-sheet {
+        display: block;
+      }
+      body.quick-edit-active #tn-notes-drawer {
+        display: none !important;
+      }
+    }
+    @media (max-width: 640px) {
+      #tn-player-hud {
+        bottom: 10px;
+        max-width: calc(100vw - 16px);
+        padding: 5px 8px;
+        gap: 3px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+      }
+      .tn-hud-btn {
+        padding: 6px 8px;
+        font-size: 0.74rem;
+        white-space: nowrap;
+      }
+      .tn-hud-btn .tn-hud-label-hide-sm {
+        display: none;
+      }
+      .tn-hud-counter {
+        padding: 0 4px;
+        min-width: 42px;
+        font-size: 0.74rem;
+      }
+      #tn-quick-edit-banner {
+        top: 8px;
+        max-width: calc(100vw - 20px);
+        padding: 5px 10px;
+        font-size: 0.7rem;
+      }
+    }
   `;
 
   const playerJs = `
@@ -401,6 +485,134 @@ function generatePortableDeckHtml() {
         }
       });
 
+      const btnShare = document.getElementById('tn-btn-share');
+      const mobTitleInput = document.getElementById('tn-mob-title');
+      const mobBodyInput = document.getElementById('tn-mob-body');
+      const mobNotesInput = document.getElementById('tn-mob-notes');
+
+      function buildCleanHtmlSnapshot() {
+        flushCurrentSlideEdits();
+        const wasEditing = isQuickEdit;
+        if (wasEditing) toggleQuickEdit(false);
+
+        const docClone = document.documentElement.cloneNode(true);
+        const clonedBody = docClone.querySelector('body');
+        if (clonedBody) clonedBody.classList.remove('quick-edit-active');
+        const clonedNotes = docClone.querySelector('#tn-notes-drawer');
+        if (clonedNotes) clonedNotes.classList.remove('open');
+        const clonedStage = docClone.querySelector('#tn-player-stage');
+        if (clonedStage) clonedStage.innerHTML = '';
+
+        const htmlOut = '<!DOCTYPE html>\\n' + docClone.outerHTML;
+        if (wasEditing) toggleQuickEdit(true);
+        return htmlOut;
+      }
+
+      async function shareOrEmailDeck() {
+        const htmlOut = buildCleanHtmlSnapshot();
+        const filename = '${escapeHtmlSafe(getDeckSlugFilename())}';
+        const title = '${escapeHtmlSafe(deckTitle)}';
+        try {
+          const file = new File([htmlOut], filename, { type: 'text/html' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: title,
+              text: 'TN Slides Presentation (' + filename + ')'
+            });
+            return;
+          }
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+        // Fallback on desktop: download file so user can attach to email
+        const blob = new Blob([htmlOut], { type: 'text/html;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (btnShare) {
+          const orig = btnShare.innerHTML;
+          btnShare.innerHTML = '<span>Saved for Email</span>';
+          setTimeout(() => { btnShare.innerHTML = orig; }, 2200);
+        }
+      }
+
+      function syncMobileInputsFromSlide() {
+        const slideObj = (deckData.slides && deckData.slides[currentIdx]) || {};
+        if (mobTitleInput) mobTitleInput.value = slideObj.title || '';
+        if (mobBodyInput) mobBodyInput.value = slideObj.body || '';
+        if (mobNotesInput) mobNotesInput.value = slideObj.notes || '';
+      }
+
+      function applyMobileInputsToStage() {
+        const slideObj = deckData.slides && deckData.slides[currentIdx];
+        if (!slideObj) return;
+        if (mobTitleInput) {
+          slideObj.title = mobTitleInput.value;
+          const titleEl = stage.querySelector('.slide-title, h1, h2');
+          if (titleEl) titleEl.innerText = mobTitleInput.value;
+        }
+        if (mobBodyInput) {
+          slideObj.body = mobBodyInput.value;
+          const lines = mobBodyInput.value.split('\\n').map(s => s.trim()).filter(Boolean);
+          const listEl = stage.querySelector('.slide-bullets, ul, ol');
+          if (listEl) {
+            listEl.innerHTML = lines.map(l => '<li>' + l.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</li>').join('');
+          }
+        }
+        if (mobNotesInput) {
+          slideObj.notes = mobNotesInput.value;
+          if (notesTextarea) notesTextarea.value = mobNotesInput.value;
+        }
+        if (dataEl) {
+          dataEl.textContent = '\\n' + JSON.stringify(deckData, null, 2) + '\\n  ';
+        }
+        const container = slideContainers[currentIdx];
+        if (container) {
+          const clone = stage.cloneNode(true);
+          clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+          container.innerHTML = clone.innerHTML;
+        }
+      }
+
+      if (mobTitleInput) mobTitleInput.addEventListener('input', applyMobileInputsToStage);
+      if (mobBodyInput) mobBodyInput.addEventListener('input', applyMobileInputsToStage);
+      if (mobNotesInput) mobNotesInput.addEventListener('input', applyMobileInputsToStage);
+      if (btnShare) btnShare.addEventListener('click', shareOrEmailDeck);
+
+      // Touch swipe navigation on mobile
+      let touchStartX = 0;
+      let touchStartY = 0;
+      const playerMain = document.getElementById('tn-deck-player');
+      if (playerMain) {
+        playerMain.addEventListener('touchstart', (e) => {
+          if (e.touches && e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }
+        }, { passive: true });
+        playerMain.addEventListener('touchend', (e) => {
+          if (isQuickEdit || !e.changedTouches || e.changedTouches.length !== 1) return;
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+            if (dx < 0) renderSlide(currentIdx + 1);
+            else renderSlide(currentIdx - 1);
+          }
+        }, { passive: true });
+      }
+
+      const _origRenderSlide = renderSlide;
+      renderSlide = function(idx) {
+        _origRenderSlide(idx);
+        syncMobileInputsFromSlide();
+      };
+
       document.addEventListener('keydown', (e) => {
         const tag = (e.target && e.target.tagName) || '';
         const isTyping = (e.target && e.target.isContentEditable) || tag === 'TEXTAREA' || tag === 'INPUT';
@@ -471,8 +683,8 @@ ${playerCss}
 </head>
 <body>
   <div id="tn-quick-edit-banner">
-    <span><i class="fa-solid fa-pen-to-square"></i> Quick Edit Mode — Click any text on the slide or edit Speaker Notes</span>
-    <button type="button" class="tn-hud-btn" id="tn-btn-done-edit" style="background: rgba(255,255,255,0.16); padding: 4px 10px;">Done (Esc)</button>
+    <span><i class="fa-solid fa-pen-to-square"></i> Quick Edit Mode</span>
+    <button type="button" class="tn-hud-btn" id="tn-btn-done-edit" style="background: rgba(255,255,255,0.16); padding: 4px 10px;">Done</button>
   </div>
 
   <main id="tn-deck-player" aria-label="Presentation Player">
@@ -480,6 +692,15 @@ ${playerCss}
       <div id="tn-player-stage" class="slide-stage ${escapeHtmlSafe(theme)}"></div>
     </div>
   </main>
+
+  <section id="tn-mobile-edit-sheet" aria-label="Mobile Quick Editor">
+    <label for="tn-mob-title">Slide Title</label>
+    <input type="text" id="tn-mob-title" placeholder="Slide title...">
+    <label for="tn-mob-body">Bullets / Body (one per line)</label>
+    <textarea id="tn-mob-body" placeholder="Bullet points..."></textarea>
+    <label for="tn-mob-notes">Speaker Notes</label>
+    <textarea id="tn-mob-notes" placeholder="Speaker notes..."></textarea>
+  </section>
 
   <aside id="tn-notes-drawer" aria-label="Speaker Notes">
     <div id="tn-notes-drawer-header">
@@ -500,15 +721,19 @@ ${playerCss}
     <span class="tn-hud-divider"></span>
     <button type="button" class="tn-hud-btn" id="tn-btn-notes" title="Speaker Notes (N)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <span>Notes</span>
+      <span class="tn-hud-label-hide-sm">Notes</span>
     </button>
     <button type="button" class="tn-hud-btn" id="tn-btn-quick-edit" title="Quick Edit Last-Minute Typos (E)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      <span>Quick Edit</span>
+      <span>Edit</span>
+    </button>
+    <button type="button" class="tn-hud-btn" id="tn-btn-share" title="Share / Email Deck">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      <span class="tn-hud-label-hide-sm">Share</span>
     </button>
     <button type="button" class="tn-hud-btn save-btn" id="tn-btn-save-copy" title="Save Updated HTML Copy (Ctrl+S)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-      <span>Save Copy</span>
+      <span>Save</span>
     </button>
     <button type="button" class="tn-hud-btn" id="tn-btn-fullscreen" title="Fullscreen (F)" aria-label="Toggle Fullscreen">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
