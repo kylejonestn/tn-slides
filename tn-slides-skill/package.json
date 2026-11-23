@@ -1,0 +1,9 @@
+{
+  "name": "tn-slides-skill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portable TN Slides presentation builder skill (HTML Smart-Deck + WCAG 2.1 AA PPTX)",
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}
